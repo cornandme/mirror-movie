@@ -1,1 +1,1 @@
-# movie-recommender-kor
+# movie-comment-recommender
