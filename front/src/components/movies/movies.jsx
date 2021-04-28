@@ -5,13 +5,15 @@ import styles from './movies.module.css'
 class Movies extends PureComponent {
   render() {
     console.log('rendering <Movies>. props:', this.props, 'state:', this.state);
-    console.log(this.props.movies && this.props.movies);
     return (
-      <ul className={styles.movieList}>
-        {this.props.movies && this.props.movies.map((movie) => (
-          <li><span>{movie.movie_id}</span></li>
-        ))}
-      </ul>
+      <div>
+        <h4>{this.props.id && this.props.id}</h4>
+        <ul className={styles.movieList}>
+          {this.props.movies && this.props.movies.map((movie) => (
+            <li><span>{movie.movie_id}</span></li>
+          ))}
+        </ul>
+      </div>
     );
   }
 }
