@@ -9,16 +9,26 @@ class App extends PureComponent {
   constructor(props) {
     super(props);
     this.state = {
-      test: null,
+      data: null
     }
   }
 
+  initState = async () => {
+    const data = await this.props.movieService.getFrontData();
+    this.setState({ data });
+  }
+
+  componentDidMount() {
+    console.log('update checking after mount...');
+    this.initState();
+  }
+
   render() {
-    console.log('rendering <App>', this.props, this.state);
+    console.log('rendering <App>. props:', this.props, 'state:', this.state);
     return (
       <div className={styles.app}>
         <Route exact path="/">
-          <Front/>
+          <Front data={this.state.data}/>
         </Route>
       </div>
     )

@@ -1,11 +1,18 @@
 class MovieService {
+  constructor() {
+    this.home = process.env.REACT_APP_API_HOME;
+  }
+
   getFrontData = async () => {
-    const url = process.env.REACT_APP_API_HOME;
-    console.log(url);
-    const res = await fetch(url, {
-      method: "GET",
-    });
-    return await res.json();
+    try {
+      const res = await fetch(this.home, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+      return await res.json();
+    } catch (e) {
+      console.error(`fetch failed. error: ${e}`);
+    }
   };
 }
 
