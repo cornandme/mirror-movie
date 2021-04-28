@@ -3,6 +3,7 @@ import json
 import boto3
 import botocore
 from flask import Flask
+from flask_cors import CORS
 
 with open('../config.json') as f:
     config = json.load(f)
@@ -16,6 +17,7 @@ from view import view
 
 def create_app():
     app = Flask(__name__)
+    CORS(app)
 
     # persistence layer
     s3 = boto3.client(

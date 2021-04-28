@@ -1,6 +1,9 @@
-import React, { PureComponent } from "react";
-import { Route, withRouter } from "react-router-dom";
-import styles from "./app.module.css";
+import React, { PureComponent } from 'react';
+import { Route, withRouter } from 'react-router-dom';
+
+import styles from './app.module.css';
+import Front from './components/front/front';
+
 
 class App extends PureComponent {
   constructor(props) {
@@ -9,13 +12,13 @@ class App extends PureComponent {
       test: null,
     }
   }
-  
+
   render() {
     console.log('rendering <App>', this.props, this.state);
     return (
       <div className={styles.app}>
         <Route exact path="/">
-          <h1>front page</h1>
+          <Front/>
         </Route>
       </div>
     )
