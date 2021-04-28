@@ -1,6 +1,21 @@
+import random
+
 class RecService(object):
     def __init__(self, rec_dao):
         self.rec_dao = rec_dao
+
+    def get_front_rec(self):
+        newest_rec = self.rec_dao.newest_rec
+        cluster_rec = self.rec_dao.cluster_rec
+        genre_rec = self.rec_dao.genre_rec
+
+        # transform
+        newest = [{'최신': newest_rec['newest_rec']}]
+        topic = [{key: cluster_rec[key]} for key in cluster_rec.keys()] \
+                + [{key: genre_rec[key]} for key in genre_rec.keys()]
+        random.shuffle(topic)
+
+        return newest + topic
         
     def get_newest_rec(self):
         return self.rec_dao.newest_rec['newest_rec']

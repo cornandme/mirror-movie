@@ -5,13 +5,9 @@ def create_endpoints(app, rec_service, search_service):
 
     @app.route('/', methods=['GET'])
     def home():
-        newest_rec = rec_service.get_newest_rec()
-        cluster_rec = rec_service.get_cluster_rec()
-        genre_rec = rec_service.get_genre_rec()
+        front_rec = rec_service.get_front_rec()
         return {
-            'newest_rec': newest_rec,
-            'cluster_rec': cluster_rec,
-            'genre_rec': genre_rec
+            'front_rec': front_rec
         }
     
     @app.route('/movie/<string:movie_id>', methods=['GET'])
