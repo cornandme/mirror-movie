@@ -169,7 +169,9 @@ packages/react-devtools-inline/dist
 packages/react-devtools-shell/dist
 packages/react-devtools-scheduling-profiler/dist
 
-# project
+# config
 config.json
+
+# log
 processors/logs/*
 scrapers/logs/*
