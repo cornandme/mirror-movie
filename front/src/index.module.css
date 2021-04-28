@@ -1,0 +1,42 @@
+@import "./reset.css";
+@value customBlack from './common/colors.css';
+@value customWhite from './common/colors.css';
+
+* {
+  font-size: 10px;
+  color: customWhite;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+input,
+select,
+textarea,
+button {
+  all: unset;
+}
+
+select {
+  -moz-appearance: auto; /* Firefox */
+  -webkit-appearance: auto; /* Safari and Chrome */
+  appearance: auto;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+span {
+  color: customWhite;
+}
+
+h1 {
+  font-size: 3rem;
+}
+
+h2 {
+  font-size: 2.5rem;
+}
