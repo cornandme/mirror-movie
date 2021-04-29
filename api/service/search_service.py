@@ -35,3 +35,8 @@ class SearchService(object):
 
         # get similar rec
         return self.rec_dao.similar_rec[movie_id]
+
+    def get_similar_words(self, keyword):
+        model = self.word_model.fasttext_word_model
+        sim_word_tuples = model.wv.most_similar(keyword)
+        return [word for word, sim in sim_word_tuples if sim > .7]
