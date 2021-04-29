@@ -23,9 +23,9 @@ def create_endpoints(app, rec_service, search_service):
 
     @app.route('/search/<path:keyword>', methods=['GET'])
     def search(keyword):
-        search_result = search_service.search_movie(keyword)
+        movies = search_service.search_movie(keyword)
         similar_words = search_service.get_similar_words(keyword)
         return {
-            'search_result': search_result,
+            'movies': movies,
             'similar_words': similar_words
         }
