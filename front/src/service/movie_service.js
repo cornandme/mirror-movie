@@ -14,6 +14,19 @@ class MovieService {
       console.error(`fetch failed. error: ${e}`);
     }
   };
+
+  getKeywordSearchResult = async (keyword) => {
+    const url = `${this.home}/search/${keyword}`;
+    try {
+      const res = await fetch(url, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+      return await res.json();
+    } catch (e) {
+      console.error(`fetch failed. error: ${e}`);
+    }
+  };
 }
 
 export default MovieService;

@@ -1,6 +1,5 @@
 @import "./reset.css";
-@value customBlack from './common/colors.css';
-@value customWhite from './common/colors.css';
+@value customBlack, customWhite, customGrey from './common/colors.css';
 
 * {
   font-size: 10px;
@@ -15,6 +14,33 @@ select,
 textarea,
 button {
   all: unset;
+}
+
+::-webkit-input-placeholder {
+  /* WebKit, Blink, Edge */
+  color: customGrey;
+}
+:-moz-placeholder {
+  /* Mozilla Firefox 4 to 18 */
+  color: customGrey;
+  opacity: 1;
+}
+::-moz-placeholder {
+  /* Mozilla Firefox 19+ */
+  color: customGrey;
+  opacity: 1;
+}
+:-ms-input-placeholder {
+  /* Internet Explorer 10-11 */
+  color: customGrey;
+}
+::-ms-input-placeholder {
+  /* Microsoft Edge */
+  color: customGrey;
+}
+::placeholder {
+  /* Most modern browsers support this now. */
+  color: customGrey;
 }
 
 select {

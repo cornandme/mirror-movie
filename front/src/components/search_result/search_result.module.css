@@ -1,13 +1,11 @@
 @value customBlack from '../../common/colors.css';
 
-.main {
+.modalBlock {
+  position: fixed;
+  top: 5rem;
+  z-index: 1;
   width: 100%;
   height: 100%;
-  margin-top: 5rem;
-}
-
-.movieListBoard {
-  display: flex;
-  flex-direction: column;
   background-color: customBlack;
+  opacity: 0.8;
 }

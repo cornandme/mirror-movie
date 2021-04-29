@@ -1,0 +1,28 @@
+.topicArea {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 2rem 2rem 3rem;
+}
+
+.topicTitle {
+  width: 100%;
+  height: 3rem;
+}
+
+.movieList {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+}
+
+.posterContainer {
+  width: 9.5vw;
+  height: auto;
+  padding-right: 1rem;
+}
+
+.poster {
+  display: block;
+  width: 100%;
+}
