@@ -1,6 +1,7 @@
 import React, { PureComponent } from 'react';
 
-import styles from './movies.module.css'
+import styles from './movies.module.css';
+import Poster from '../poster/poster';
 
 
 class Movies extends PureComponent {
@@ -14,17 +15,16 @@ class Movies extends PureComponent {
         <ul className={styles.movieList}>
           {this.props.movies && this.props.movies.map((movie) => {
             const src = `${process.env.REACT_APP_POSTER_SOURCE}${movie.movie_id}.jpg`;
-            try {
-              return (
-                <li>
-                  <div className={styles.posterContainer}>
-                    <img className={styles.poster} src={`${src}`} alt={`${movie.movie_id}`}/>
-                  </div>
-                </li>
-              );
-            } catch (e) {
-              console.error(e);
-            }
+            return (
+              <li className={styles.posterContainer}>
+                <Poster 
+                  key={movie.movie_id}
+                  id={movie.movie_id}
+                  src={src}
+                  getMovie={this.props.getMovie}
+                />
+              </li>
+            );
           })}
         </ul>
       </section>

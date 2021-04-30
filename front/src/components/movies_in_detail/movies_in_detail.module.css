@@ -1,0 +1,11 @@
+.movieList {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.posterContainer {
+  width: 23em;
+  height: 32.857142em;
+}

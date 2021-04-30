@@ -45,6 +45,7 @@ class Nav extends PureComponent {
               type="text" 
               name="search input" 
               placeholder="검색"
+              autoFocus
               required
               onChange={this.handleKeywordInput}
             />
@@ -52,7 +53,10 @@ class Nav extends PureComponent {
         </nav>
         <SearchResult 
           stopSearch={this.props.stopSearch}
+          search={this.props.search}
+          getMovie={this.props.getMovie}
           searchResult={this.props.searchResult}
+          lastKeyword={this.props.lastKeyword}
         />
       </>
     );

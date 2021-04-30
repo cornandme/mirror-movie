@@ -3,6 +3,7 @@ import { Route, withRouter } from 'react-router-dom';
 
 import styles from './app.module.css';
 import Front from './components/front/front';
+import MovieInfo from './components/movie_info/movie_info';
 
 
 class App extends PureComponent {
@@ -10,14 +11,26 @@ class App extends PureComponent {
     super(props);
     this.state = {
       data: null,
+      movieData: null,
+      currentY: null,
       searching: false,
-      searchResult: null
+      searchResult: null,
+      lastKeyword: null,
     }
   }
 
   initState = async () => {
     const data = await this.props.movieService.getFrontData();
     this.setState({ data });
+  }
+
+  getMovie = async (movie_id) => {
+    const movieData = await this.props.movieService.getMovieData(movie_id);
+    this.setState({ movieData });
+  }
+
+  stopDetail = () => {
+    this.setState({ movieData: null });
   }
 
   startSearch = () => {
@@ -27,16 +40,27 @@ class App extends PureComponent {
   stopSearch = () => {
     this.setState({
       searching: false,
-      searchResult: null
+      searchResult: null,
+      lastKeyword: null,
     });
   }
 
   search = async (keyword) => {
     if (!keyword) {
-      return {}
+      this.setState({
+        searchResult: {
+          'movies': [],
+          'similar_words': [],
+        },
+        lastKeyword: null
+      });
+    } else if (keyword === this.state.lastKeyword) {
+      return;
+    } else {
+      const searchResult = await this.props.movieService.getKeywordSearchResult(keyword);
+      const lastKeyword = keyword;
+      this.setState({ searchResult, lastKeyword });
     }
-    const searchResult = await this.props.movieService.getKeywordSearchResult(keyword);
-    this.setState({ searchResult: searchResult.search_result });
   }
 
   componentDidMount() {
@@ -51,11 +75,19 @@ class App extends PureComponent {
         <Route exact path="/">
           <Front 
             data={this.state.data}
+            movieData={this.state.movieData}
+            searching={this.state.searching}
+            searchResult={this.state.searchResult}
+            lastKeyword={this.state.lastKeyword}
+            getMovie={this.getMovie}
             startSearch={this.startSearch}
             stopSearch={this.stopSearch}
             search={this.search}
-            searching={this.state.searching}
-            searchResult={this.state.searchResult}
+          />
+          <MovieInfo 
+            movieData={this.state.movieData}
+            getMovie={this.getMovie}
+            stopDetail={this.stopDetail}
           />
         </Route>
       </div>
