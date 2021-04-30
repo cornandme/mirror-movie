@@ -29,12 +29,14 @@ class SearchService(object):
         movie_id = filtered_df.assign(distance=distances).sort_values(by='distance').index[0]
 
         # dont's return rec if the closest movie is too far from keyword
+        '''
         target_vector = movie_vectors.loc[movie_id]['vector']
         if cosine(target_vector, keyword_vector) > 0.3:
             return []
+        '''
 
         # get similar rec
-        return self.rec_dao.similar_rec[movie_id]
+        return self.rec_dao.similar_rec.get(movie_id)
 
     def get_similar_words(self, keyword):
         model = self.word_model.fasttext_word_model
