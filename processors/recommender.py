@@ -173,8 +173,10 @@ class Rec:
         movies_df = movies_df[~(movies_df['title_kor'].isna()
                         | movies_df['release_date'].isna()
                         | (movies_df['release_date'] == '')
-                        | (movies_df['release_date'].str.len() > 10)
                         | (movies_df['review_count'] == 0)
+                        | movies_df['poster_url'].isna()
+                        | movies_df['stillcut_url'].isna()
+                        | (movies_df['release_date'].str.len() > 10)
                     )]
         movies_df = movies_df.rename(columns={'_id': 'movie_id'})
         return movies_df
