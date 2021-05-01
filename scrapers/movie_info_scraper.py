@@ -336,8 +336,9 @@ class MovieScraper:
             except Exception as e:
                 trial += 1
                 self.logger.error(f'[trial {trial}]{e}')
-                if trial > 2:
+                if trial > 9:
                     break
+                time.sleep(1)
                 continue
 
 def sleep():
