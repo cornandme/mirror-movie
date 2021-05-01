@@ -41,8 +41,11 @@
   background: linear-gradient(
     to top,
     rgba(23, 23, 23, 1) 0%,
-    rgba(87, 87, 87, 0.514) 15%,
-    rgba(255, 255, 255, 0) 30%,
+    rgba(23, 23, 23, 0.975) 3%,
+    rgba(23, 23, 23, 0.875) 5%,
+    rgba(23, 23, 23, 0.75) 7%,
+    rgba(23, 23, 23, 0.5) 10%,
+    rgba(255, 255, 255, 0) 15%,
     rgba(255, 255, 255, 0) 100%
   );
   z-index: 11;
@@ -76,7 +79,7 @@
 .recSection {
   display: flex;
   flex-direction: column;
-  padding: 2rem;
+  padding: 2rem 1.5rem 2rem 1.5rem;
 }
 
 .recContainer {
@@ -86,4 +89,5 @@
 .recTitle {
   margin-top: 2rem;
   margin-bottom: 1rem;
+  padding-left: 0.5rem;
 }

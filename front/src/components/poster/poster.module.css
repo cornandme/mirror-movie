@@ -1,9 +1,3 @@
-.posterContainer {
-  width: 9.5vw;
-  height: auto;
-  padding-right: 1rem;
-}
-
 .poster {
   object-fit: cover;
   width: 100%;
