@@ -1,0 +1,21 @@
+server {
+  listen 80;
+  server_name 3.34.184.51 www.3.34.184.51;
+
+  location / {
+    root /home/ubuntu/mirror-movie/front/build;
+    try_files $uri $uri/;
+    add_header Cache-Control "no-cache";
+  }
+
+  location /static {
+    root /home/ubuntu/mirror-movie/front/build;
+    expires 1y;
+    add_header Cache-Control "public";
+  }
+
+  location /api/ {
+    include proxy_params;
+    proxy_pass http://0.0.0.0:5000;
+  }
+}
