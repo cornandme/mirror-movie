@@ -298,21 +298,29 @@ class MovieScraper:
         return html
 
     def _set_init_movie_list(self):
-        path = config["SCRAPER"]["NAVER_MOVIE_RANKING_PATH"]
-        html = self._get_html(path)
-
-        soup = BeautifulSoup(html, 'html.parser')
-        try:
-            tags = soup.find('table', {'class': 'list_ranking'}).find_all('a')
-        except Exception as e:
-            self.logger.error(e)
-        urls = [tag['href'] for tag in tags]
-
+        day = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
+        print(day)
+        root_path = config["SCRAPER"]["NAVER_MOVIE_RANKING_PATH"]
+        queries = ['cnt', 'cur']
         movie_ids = []
-        for url in urls:
-            movie_id = url[url.index('=')+1:]
-            if self.db[config["DB"]["MOVIES"]].find_one({ '_id': movie_id}) is None:
-                movie_ids.append(movie_id)
+
+        for query in queries:
+            path = f'{root_path}?sel={query}&date={day}'
+            print(path)
+            html = self._get_html(path)
+
+            soup = BeautifulSoup(html, 'html.parser')
+            try:
+                tags = soup.find('table', {'class': 'list_ranking'}).find_all('a')
+            except Exception as e:
+                self.logger.error(e)
+                
+            urls = [tag['href'] for tag in tags]
+            for url in urls:
+                movie_id = url[url.index('=')+1:]
+                if self.db[config["DB"]["MOVIES"]].find_one({ '_id': movie_id}) is None:
+                    movie_ids.append(movie_id)
+            sleep()
 
         try:
             self.db[config["DB"]["MOVIE_QUEUE"]].drop()
