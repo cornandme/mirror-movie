@@ -329,7 +329,7 @@ class MovieScraper:
                 with requests.get(url_from, stream=True) as r:
                     self.s3.upload_fileobj(
                         r.raw, 
-                        config.S3_BUCKET, 
+                        config['AWS']['S3_BUCKET'], 
                         path_to
                     )
                 break
