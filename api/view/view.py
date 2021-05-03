@@ -1,16 +1,16 @@
 def create_endpoints(app, movie_info_service, rec_service, search_service):
-    @app.route('/ping', methods=['GET'])
+    @app.route('/api/ping', methods=['GET'])
     def ping():
         return 'pong!'
 
-    @app.route('/', methods=['GET'])
+    @app.route('/api/', methods=['GET'])
     def home():
         front_rec = rec_service.get_front_rec()
         return {
             'front_rec': front_rec
         }
     
-    @app.route('/movie/<string:movie_id>', methods=['GET'])
+    @app.route('/api/movie/<string:movie_id>', methods=['GET'])
     def movie(movie_id):
         movie_info = movie_info_service.get_movie_info(movie_id)
         actor_rec = rec_service.get_actor_rec(movie_id)
@@ -23,7 +23,7 @@ def create_endpoints(app, movie_info_service, rec_service, search_service):
             'similar_rec': similar_rec
         }
 
-    @app.route('/search/<path:keyword>', methods=['GET'])
+    @app.route('/api/search/<path:keyword>', methods=['GET'])
     def search(keyword):
         movies = search_service.search_movie(keyword)
         similar_words = search_service.get_similar_words(keyword)
