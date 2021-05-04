@@ -301,7 +301,7 @@ class MovieScraper:
         day = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
         print(day)
         root_path = config["SCRAPER"]["NAVER_MOVIE_RANKING_PATH"]
-        queries = ['cnt', 'cur']
+        queries = ['cnt', 'cur', 'pnt']
         movie_ids = []
 
         for query in queries:
