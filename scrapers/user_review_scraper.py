@@ -229,7 +229,8 @@ class UserReviewScraper:
                 'rate': rate,
                 'review': review,
                 'certificated': certificated,
-                'date': date
+                'date': date,
+                'tokenized': False
             }
             self.reviews.append(docu)
 
