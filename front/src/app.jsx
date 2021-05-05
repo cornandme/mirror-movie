@@ -12,7 +12,6 @@ class App extends PureComponent {
     this.state = {
       data: null,
       movieData: null,
-      currentY: null,
       searching: false,
       searchResult: null,
       lastKeyword: null,
