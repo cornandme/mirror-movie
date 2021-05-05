@@ -19,8 +19,6 @@ class SearchResult extends Component {
   }
 
   render() {
-    console.log('rendering <SearchResult>', this.props, this.state);
-    console.log(this.props.lastKeyword);
     if (!this.props.searchResult | !this.props.lastKeyword) {
       return (
         <div className={styles.modalBlock} onClick={this.handleClickModalBlock}></div>

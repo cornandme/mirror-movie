@@ -19,7 +19,6 @@ class Nav extends PureComponent {
   }
 
   render() {
-    console.log('rendering <Nav>', this.props, this.state);
     if (!this.props.searching) {
       return (
         <nav className={styles.navBar}>

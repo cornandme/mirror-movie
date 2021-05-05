@@ -6,7 +6,6 @@ import Poster from '../poster/poster';
 
 class Movies extends PureComponent {
   render() {
-    console.log('rendering <Movies>. props:', this.props, 'state:', this.state);
     return (
       <section className={styles.topicArea}>
         <h4 className={styles.topicTitle}>

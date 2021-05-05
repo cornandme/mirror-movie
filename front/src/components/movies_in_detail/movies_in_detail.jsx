@@ -6,7 +6,6 @@ import Poster from '../poster/poster';
 
 class MoviesInDetail extends Component {
   render() {
-    console.log('rendering <MoviesInDetail>', this.props, this.state);
     return (
       <ul className={styles.movieList}>
       {this.props.movies && this.props.movies.map((movie) => {

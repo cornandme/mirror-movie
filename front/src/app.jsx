@@ -81,7 +81,6 @@ class App extends PureComponent {
   }
 
   render() {
-    console.log('rendering <App>. props:', this.props, 'state:', this.state);
     return (
       <div className={styles.app}>
         <Route exact path="/">

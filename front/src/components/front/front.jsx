@@ -7,7 +7,6 @@ import Movies from '../movies/movies';
 
 class Front extends Component {
   render() {
-    console.log('rendering <Front>. props:', this.props, 'state:', this.state);
     return (
       <>
         <Nav 
