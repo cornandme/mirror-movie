@@ -44,7 +44,3 @@ def create_app():
     view.create_endpoints(app, movie_info_service, rec_service, search_service)
 
     return app
-
-
-if __name__=='__main__':
-    create_app().run()
