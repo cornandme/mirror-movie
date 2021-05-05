@@ -11,7 +11,9 @@ class Poster extends Component {
   render() {
     return (
       <img 
-        className={styles.poster} src={`${this.props.src}`} alt={`${this.props.id}`}
+        className={styles.poster} 
+        src={`${this.props.src}`} 
+        alt={`${this.props.id}`}
         onClick={this.handleMovieClick}
       />
     );

@@ -10,7 +10,11 @@ class App extends PureComponent {
   constructor(props) {
     super(props);
     this.state = {
-      data: null,
+      dimensionX: window.innerWidth,
+      frontData: null,
+      frontPosterCount: null,
+      frontPosterWidth: null,
+      frontPosterHeight: null,
       movieData: null,
       searching: false,
       searchResult: null,
@@ -18,9 +22,9 @@ class App extends PureComponent {
     }
   }
 
-  initState = async () => {
-    const data = await this.props.movieService.getFrontData();
-    this.setState({ data });
+  getfrontData = async () => {
+    const frontData = await this.props.movieService.getFrontData();
+    this.setState({ frontData });
   }
 
   getMovie = async (movie_id) => {
@@ -62,9 +66,18 @@ class App extends PureComponent {
     }
   }
 
+  handleResize = () => {
+    const dimensionX = document.body.scrollWidth;
+    const frontPosterCount = this.props.resizer.getFrontPosterCount(dimensionX);
+    const [frontPosterWidth, frontPosterHeight] = this.props.resizer.getFrontPosterSize(dimensionX, frontPosterCount);
+    this.setState({ dimensionX, frontPosterCount, frontPosterWidth, frontPosterHeight });
+  }
+
   componentDidMount() {
     console.log('update checking after mount...');
-    this.initState();
+    this.getfrontData();
+    this.handleResize();
+    window.addEventListener('resize', this.handleResize);
   }
 
   render() {
@@ -73,7 +86,10 @@ class App extends PureComponent {
       <div className={styles.app}>
         <Route exact path="/">
           <Front 
-            data={this.state.data}
+            frontData={this.state.frontData}
+            frontPosterCount={this.state.frontPosterCount}
+            frontPosterWidth={this.state.frontPosterWidth}
+            frontPosterHeight={this.state.frontPosterHeight}
             movieData={this.state.movieData}
             searching={this.state.searching}
             searchResult={this.state.searchResult}

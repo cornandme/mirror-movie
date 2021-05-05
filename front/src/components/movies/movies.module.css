@@ -13,11 +13,8 @@
 .movieList {
   width: 100%;
   display: flex;
-  align-items: flex-start;
 }
 
 .posterContainer {
-  width: 10vw;
-  height: 13vw;
-  padding-right: 1rem;
+  margin-right: 1rem;
 }

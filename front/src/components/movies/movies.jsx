@@ -13,10 +13,13 @@ class Movies extends PureComponent {
           {this.props.id && this.props.id}
         </h4>
         <ul className={styles.movieList}>
-          {this.props.movies && this.props.movies.map((movie) => {
+          {this.props.movies && this.props.movies.slice(0, this.props.posterCount).map((movie) => {
             const src = `${process.env.REACT_APP_POSTER_SOURCE}${movie.movie_id}.jpg`;
             return (
-              <li className={styles.posterContainer}>
+              <li 
+                className={styles.posterContainer} 
+                style={{ width: this.props.posterWidth, height: this.props.posterHeight }}
+              >
                 <Poster 
                   key={movie.movie_id}
                   id={movie.movie_id}
