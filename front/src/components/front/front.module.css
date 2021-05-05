@@ -1,4 +1,4 @@
-@value customBlack from '../../common/colors.css';
+@value customBlack, customGrey, customBlue from '../../common/colors.css';
 
 .main {
   width: 100%;
