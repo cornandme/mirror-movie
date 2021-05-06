@@ -55,7 +55,10 @@ class Tokenizer(object):
 
 
     def tokenize(self):
-        mp.set_start_method('spawn')
+        try:
+            mp.set_start_method('spawn')
+        except RuntimeError:
+            pass
 
         with mp.Pool(processes=self.n_processes, maxtasksperchild=1) as p:
             for idx, chunk in enumerate(self.reviews_df_split):
