@@ -155,9 +155,8 @@ def job_estimater():
     db = client[config['DB']['DATABASE']]
     user_reviews = db[config['DB']['USER_REVIEWS']]
 
-    row_count = 0
-    for _ in user_reviews.find({'tokenized': False}):
-        row_count += 1
+
+    row_count = user_reviews.count_documents({'tokenized': False})
     print(f'{row_count} rows are not tokenized.')
 
     if row_count == 0:
