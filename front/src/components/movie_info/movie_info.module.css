@@ -1,4 +1,4 @@
-@value customBlack, customGrey from '../../common/colors.css';
+@value customBlack, customGrey, customBlue from '../../common/colors.css';
 
 .modalBlock {
   z-index: 10;
@@ -55,6 +55,18 @@
   object-fit: cover;
   width: 100%;
   max-height: 40rem;
+}
+
+.xButton {
+  position: absolute;
+  top: 2%;
+  right: 2%;
+  z-index: 12;
+}
+
+.xButton > i {
+  font-size: 1.3rem;
+  text-shadow: 0 0 1rem customBlack;
 }
 
 .movieTitle {

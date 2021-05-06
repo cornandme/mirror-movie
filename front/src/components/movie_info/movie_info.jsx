@@ -13,6 +13,10 @@ class MovieInfo extends Component {
     this.props.stopDetail();
   }
 
+  handleClickXButton = () => {
+    this.props.stopDetail();
+  }
+
   componentDidMount() {
     if (this.props.movieData) {
       document.body.style.overflow = 'hidden';
@@ -42,6 +46,12 @@ class MovieInfo extends Component {
               alt={`${this.props.movieData.movie_info[0].movie_id}`}
             />
             <h3 className={styles.movieTitle}>{this.props.movieData.movie_info[0].title_kor}</h3>
+            <div 
+              className={styles.xButton}
+              onClick={this.handleClickXButton}
+            >
+              <i class="fas fa-times"></i>
+            </div>
           </div>
           <div className={styles.infoSection}>
             <span className={styles.info}>
