@@ -177,3 +177,6 @@ config.json
 # log
 processors/logs/*
 scrapers/logs/*
+
+# file
+*.pickle
