@@ -158,6 +158,7 @@ def job_estimater():
     row_count = 0
     for _ in user_reviews.find({'tokenized': False}):
         row_count += 1
+    print(f'{row_count} rows are not tokenized.')
 
     if row_count == 0:
         print('all documents are tokenized. finish process.')
