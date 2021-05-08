@@ -41,9 +41,34 @@ def main():
         df.loc[:, 'release_year'] = df.apply(year_process, axis=1)
         return df
 
+    # drop useless columns
+    def drop_columns(df):
+        df = df.drop(columns=['updated_at', 'movie_id_x', 'role_x', 'movie_id_y', 'role_y'])
+        return df
+
+    def filter_fault_rows(df):
+        # filter
+        df = df[~(df['title_kor'].isna()
+                        | df['release_date'].isna()
+                        | (df['release_date'] == '')
+                        | (df['review_count'] == 0)
+                        | df['poster_url'].isna()
+                        | df['stillcut_url'].isna()
+                        | (df['release_date'].str.len() > 10)
+                        | (df['release_date'].str.len() < 4)
+                        | (df['release_year'] == 'None')
+                        | (df['review_count'] < 30)
+                    )]
+        df = df[~df['genre'].map(set(['에로']).issubset)]
+
+        df = df.rename(columns={'_id': 'movie_id'})
+        return df
+
     # execute
     result = merge_staff_columns(movies_df, makers_df)
     result = get_year_column(result)
+    result = drop_columns(result)
+    result = filter_fault_rows(result)
 
     # unload
     s3 = boto3.client(
