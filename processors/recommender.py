@@ -105,13 +105,14 @@ class Rec:
             # 배우별 출연작 데이터
             actors_df = self.makers_df[self.makers_df['maker_id'].isin(main_actor_ids) & ~self.makers_df['movie_id'].isin([movie_id])].copy()
             
-            # 주연배우 기재순, 개봉일순으로 정렬
+            # 주연배우 기재순 - 사용x
             actors_df['maker_id'] = pd.Categorical(
                 actors_df['maker_id'],
                 categories=main_actor_ids,
                 ordered=True
             )
-            actors_df = actors_df.sort_values(by=['maker_id', 'release_date'], ascending=[True, False])
+            # 개봉일순으로 정렬
+            actors_df = actors_df.sort_values(by=['release_date'], ascending=[False])
 
             # 중복 영화 제거
             actors_df = actors_df.drop_duplicates(subset=['movie_id'])
@@ -132,13 +133,14 @@ class Rec:
             # 감독, 작가별 참여작 데이터
             directors_df = self.makers_df[self.makers_df['maker_id'].isin(directors) & ~self.makers_df['movie_id'].isin([movie_id])].copy()
             
-            # 기재순, 개봉일순으로 정렬
+            # 이름 기재순 - 사용x
             directors_df['maker_id'] = pd.Categorical(
                 directors_df['maker_id'],
                 categories=directors,
                 ordered=True
             )
-            directors_df = directors_df.sort_values(by=['maker_id', 'release_date'], ascending=[True, False])
+            # 개봉일순으로 정렬
+            directors_df = directors_df.sort_values(by=['release_date'], ascending=[False])
 
             # 중복 영화 제거
             directors_df = directors_df.drop_duplicates(subset=['movie_id'])
