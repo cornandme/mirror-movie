@@ -81,7 +81,7 @@ class MovieInfo extends Component {
                   <h4 className={styles.recTitle}>유사한 영화</h4>
                   <MoviesInDetail 
                     key='similar_rec'
-                    movies={this.props.movieData.similar_rec}
+                    movies={this.props.movieData.similar_rec.slice(0, 10)}
                     getMovie={this.props.getMovie}
                   />
                 </div>
