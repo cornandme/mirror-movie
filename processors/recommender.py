@@ -1,3 +1,4 @@
+import argparse
 from datetime import datetime
 from datetime import timedelta
 import json
@@ -33,9 +34,9 @@ class Rec:
         self.cluster_df = self._load_cluster_df()
         self.movie_vectors = self._load_movie_vectors()
 
-    def make_newest_rec(self):
+    def make_newest_rec(self, n):
         newest_df = self.movies_df.sort_values(by='release_date', ascending=False)
-        newest_df = newest_df[['movie_id', 'poster_url']][:10]
+        newest_df = newest_df[['movie_id', 'poster_url']][:n]
         newest_rec = {'newest_rec': newest_df.to_dict('records')}
 
         self._upload_to_s3(newest_rec, config['REC']['FRONT_NEWEST'])
@@ -69,13 +70,14 @@ class Rec:
         
         self._upload_to_s3(cluster_rec, config['REC']['FRONT_CLUSTER'])
 
-    def make_genre_rec(self):
-        genres = self.movies_df['genre'].explode().value_counts(dropna=False)
-        genres = genres[genres > 9]
+    def make_genre_rec(self, n):
+        genres = self.movies_df['genre'].explode().value_counts()
+        genres = genres[genres >= n]
         genres = list(genres.index)
         genre_df = self.movies_df[['movie_id', 'poster_url', 'genre']]
         rows = genre_df.to_dict('records')
 
+        # 멀티장르 각각 로우로 변환
         genre_rows = []
         for row in rows:
             for genre in row['genre']:
@@ -89,13 +91,14 @@ class Rec:
         # 랜덤
         genre_df = genre_df.sample(frac=1)
         
+        # 장르별로 분류
         genre_rec = dict()
         for genre in genres:
-            genre_rec[genre] = genre_df[genre_df['genre'] == genre][['movie_id', 'poster_url']][:10].to_dict('records')
+            genre_rec[genre] = genre_df[genre_df['genre'] == genre][['movie_id', 'poster_url']][:n].to_dict('records')
         
         self._upload_to_s3(genre_rec, config['REC']['FRONT_GENRE'])
 
-    def make_actor_rec(self):
+    def make_actor_rec(self, n):
         movie_ids = list(self.movies_df['movie_id'])
         actor_rec = dict()
         for movie_id in movie_ids:
@@ -118,12 +121,12 @@ class Rec:
             actors_df = actors_df.drop_duplicates(subset=['movie_id'])
 
             # 결과물
-            rec = actors_df[['movie_id', 'poster_url']][:10].to_dict('records')
+            rec = actors_df[['movie_id', 'poster_url']][:n].to_dict('records')
             actor_rec[movie_id] = rec
 
         self._upload_to_s3(actor_rec, config['REC']['DETAIL_ACTOR'])
 
-    def make_director_rec(self):
+    def make_director_rec(self, n):
         movie_ids = list(self.movies_df['movie_id'])
         director_rec = dict()
         for movie_id in movie_ids:
@@ -146,14 +149,14 @@ class Rec:
             directors_df = directors_df.drop_duplicates(subset=['movie_id'])
 
             # 결과물
-            rec = directors_df[:10][['movie_id', 'poster_url']].to_dict('records')
+            rec = directors_df[:n][['movie_id', 'poster_url']].to_dict('records')
             director_rec[movie_id] = rec
         
         self._upload_to_s3(director_rec, config['REC']['DETAIL_DIRECTOR'])
 
-    def make_similar_rec(self):
+    def make_similar_rec(self, n):
         similar_rec_df = pd.merge(self.movie_vectors, self.movies_df[['movie_id', 'poster_url']], on='movie_id', sort=False, validate='one_to_one')
-        movie_ids = list(self.movie_vectors.index)
+        movie_ids = list(self.movie_vectors.index)        
 
         similar_rec = dict()
         for movie_id in movie_ids:
@@ -169,7 +172,7 @@ class Rec:
                 tmp_df = similar_rec_df[similar_rec_df['cluster'] == cluster]
                 df_li.append(tmp_df)
                 movie_count += len(tmp_df)
-                if movie_count > 10: 
+                if movie_count >= n: 
                     break
 
             similar_df = pd.concat(df_li)
@@ -182,7 +185,7 @@ class Rec:
             similar_df = similar_df[similar_df['movie_id'] != movie.name]
 
             # n
-            similar_df = similar_df[:10]
+            similar_df = similar_df[:n]
 
             # 결과
             rec = similar_df[['movie_id', 'poster_url']].to_dict('records')
@@ -192,7 +195,9 @@ class Rec:
 
 
     def _load_movies_df(self):
-        movies_df = pd.DataFrame(self.db[config['DB']['MOVIES']].find())
+        movies_df = self._load_from_s3(config['AWS']['S3_BUCKET'], config['DATA']['MOVIE_INFO'])
+
+        # filter
         movies_df = movies_df[~(movies_df['title_kor'].isna()
                         | movies_df['release_date'].isna()
                         | (movies_df['release_date'] == '')
@@ -200,7 +205,12 @@ class Rec:
                         | movies_df['poster_url'].isna()
                         | movies_df['stillcut_url'].isna()
                         | (movies_df['release_date'].str.len() > 10)
+                        | (movies_df['release_date'].str.len() < 4)
+                        | (movies_df['release_year'] == 'None')
+                        | (movies_df['review_count'] < 30)
                     )]
+        movies_df = movies_df[~movies_df['genre'].map(set(['에로']).issubset)]
+
         movies_df = movies_df.rename(columns={'_id': 'movie_id'})
         return movies_df
 
@@ -228,20 +238,49 @@ class Rec:
     def _upload_to_s3(self, rec, s3_path):
         p = pickle.dumps(rec)
         file = BytesIO(p)
-        self.s3.upload_fileobj(file, config['AWS']['S3_BUCKET'], s3_path)
+
+        trial = 0
+        while True:
+            try:
+                self.s3.upload_fileobj(file, config['AWS']['S3_BUCKET'], s3_path)
+                return
+            except Exception as e:
+                trial += 1
+                self.logger.error(f'[trial {trial}]{e}')
+                if trial > 9:
+                    self.logger.error('failed to upload files!!')
+                    break
+                time.sleep(1)
+                continue
+
+    def _load_from_s3(self, bucket, path):
+        with BytesIO() as f:
+            p = self.s3.download_fileobj(bucket, path, f)
+            f.seek(0)
+            data = joblib.load(f)
+        return data
 
 
 def main():
     rec = Rec()
-    rec.make_newest_rec()
-    rec.make_cluster_rec()
-    rec.make_genre_rec()
-    rec.make_actor_rec()
-    rec.make_director_rec()
-    rec.make_similar_rec()
+    rec.make_newest_rec(n=args.n_newest_rec)
+    rec.make_cluster_rec(n=args.n_cluster_rec)
+    rec.make_genre_rec(n=args.n_genre_rec)
+    rec.make_actor_rec(n=args.n_actor_rec)
+    rec.make_director_rec(n=args.n_director_rec)
+    rec.make_similar_rec(n=args.n_similar_rec)
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n_newest_rec', type=int, default=40)
+    parser.add_argument('-n_cluster_rec', type=int, default=40)
+    parser.add_argument('-n_genre_rec', type=int, default=40)
+    parser.add_argument('-n_actor_rec', type=int, default=10)
+    parser.add_argument('-n_director_rec', type=int, default=10)
+    parser.add_argument('-n_similar_rec', type=int, default=30)
+    args = parser.parse_args()
+
     logging.basicConfig(
         format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
         filename=f'./logs/recommender_{datetime.now().date()}.log', 
