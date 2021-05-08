@@ -11,6 +11,7 @@ with open('../config.json') as f:
 from model import MovieInfoDAO
 from model import RecDAO
 from model import WordModel
+from model import SearchDAO
 from service import MovieInfoService
 from service import RecService
 from service import SearchService
@@ -34,11 +35,13 @@ def create_app():
     print('rec_dao loaded')
     word_model = WordModel(s3, config)
     print('word_model loaded')
+    search_dao = SearchDAO(s3, config)
+    print('search_dao loaded')
 
     # business layer
     movie_info_service = MovieInfoService(movie_info_dao)
     rec_service = RecService(rec_dao)
-    search_service = SearchService(word_model, rec_dao)
+    search_service = SearchService(word_model, rec_dao, search_dao)
 
     # presentation layer
     view.create_endpoints(app, movie_info_service, rec_service, search_service)

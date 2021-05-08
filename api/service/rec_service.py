@@ -11,11 +11,13 @@ class RecService(object):
 
         # transform
         newest = [{'최신': newest_rec['newest_rec']}]
-        topic = [{key: cluster_rec[key]} for key in cluster_rec.keys()] \
-                + [{key: genre_rec[key]} for key in genre_rec.keys()]
-        random.shuffle(topic)
+        cluster = [{key: cluster_rec[key]} for key in cluster_rec.keys()]
+        genre = [{key: genre_rec[key]} for key in genre_rec.keys()]
 
-        return newest + topic
+        random.shuffle(cluster)
+        random.shuffle(genre)
+
+        return newest + cluster + genre
         
     def get_newest_rec(self):
         return self.rec_dao.newest_rec['newest_rec']
