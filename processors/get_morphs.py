@@ -15,13 +15,32 @@ with open('../config.json') as f:
 
 
 class MorphExtractor:
-    def __init__(self, pos_chunk=0):
+    def __init__(self, pos_chunk, pos_target):
         self.logger = logging.getLogger()
         self.target_row_count = self._target_row_count()
         self.pos_chunk = pos_chunk
+        self.pos_target = pos_target
         self.current_row = 0
-        self.morphs = pd.Series(dtype='object')
 
+        print(pos_chunk)
+        print(pos_target)
+
+
+    def clean_morph_db(self):
+        client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
+        db = client[config['DB']['DATABASE']]
+        morphs = db[config['DB']['USER_REVIEW_MORPHS']]
+
+        try:
+            morphs.drop()
+            if morphs.count_documents() != 0:
+                self.logger.error(f'db is not empty!!')
+                raise Exception
+        except Exception as e:
+            self.logger.error(e)
+        finally:
+            client.close()
+        
     
     def get_pos(self):
         client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
@@ -33,24 +52,40 @@ class MorphExtractor:
         
         try:
             pos = pos_path.find()[self.current_row:row_to]
-            pos_series = pd.DataFrame(pos)['tokens']
+            pos_df = pd.DataFrame(pos)[['movie_id', 'tokens']]
         except Exception as e:
             self.logger.error(e)
         finally:
             client.close()
 
         self.current_row = row_to
-        self.pos_series = pos_series
+        self.pos_df = pos_df
 
 
     def get_morphs(self):
-        new_morphs = self.pos_series.map(lambda x: [pos[0] for pos in x])
-        self.morphs = pd.concat([self.morphs, new_morphs]) 
+        if self.pos_target is None:
+            self.pos_df.loc[:, 'morphs'] = self.pos_df['tokens'].map(lambda x: [pos[0] for pos in x])
+        else:
+            self.pos_df.loc[:, 'morphs'] = self.pos_df['tokens'].map(lambda x: [pos[0] for pos in x if pos[1] in self.pos_target])
+        morph_df = self.pos_df.drop(columns=['tokens'])
+        morph_df = morph_df[morph_df['morphs'].astype('str') != '[]']
+        
+        self.morph_df = morph_df
 
 
     def save_morphs(self):
-        morphs_dict = {'morphs': self.morphs.to_list()}
-        pickle.dump(morphs_dict, open('morphs.pickle', 'wb'))
+        client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
+        db = client[config['DB']['DATABASE']]
+        morphs = db[config['DB']['USER_REVIEW_MORPHS']]
+        
+        morphs_dict = self.morph_df.to_dict('records')
+        try:
+            for doc in morphs_dict:
+                morphs.insert_one(doc)
+        except Exception as e:
+            self.logger.error(e)
+        finally:
+            client.close()
         
 
     def _target_row_count(self):
@@ -69,20 +104,21 @@ class MorphExtractor:
 
 
 def main():
-    morph_extractor = MorphExtractor(pos_chunk=args.pos_chunk)
+    morph_extractor = MorphExtractor(pos_chunk=args.pos_chunk, pos_target=args.pos_target)
+    morph_extractor.clean_morph_db()
     
     while True:
         if morph_extractor.current_row > morph_extractor.target_row_count:
             break
         morph_extractor.get_pos()
         morph_extractor.get_morphs()
-    
-    morph_extractor.save_morphs()
+        morph_extractor.save_morphs()
 
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-pos_chunk', type=int, default=1000000, help='limit rows to process.')
+    parser.add_argument('-pos_target', type=str, nargs='+', default='NNG NNP VV VA MAG VX NF NV', help='pos list to extract')
     args = parser.parse_args()
 
     logging.basicConfig(
