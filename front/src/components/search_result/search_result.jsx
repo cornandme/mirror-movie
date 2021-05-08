@@ -37,14 +37,14 @@ class SearchResult extends Component {
         <div className={styles.stillcutBlock}>
           <div className={styles.stillcutTitle}>{`<${this.props.lastKeyword}> 관련 영화`}</div>
           <ul className={styles.stillcuts}>
-            {this.props.searchResult.movies && this.props.searchResult.movies.map((movie) => {
-              const src = `${process.env.REACT_APP_STILLCUT_SOURCE}${movie.movie_id}.jpg`;
+            {this.props.searchResult.movies && this.props.searchResult.movies.map((movie_id) => {
+              const src = `${process.env.REACT_APP_STILLCUT_SOURCE}${movie_id}.jpg`;
               return (
                 <li className={styles.stillcutContainer}>
                   <img 
                     className={styles.stillcut} 
                     src={`${src}`} 
-                    alt={`${movie.movie_id}`}
+                    alt={`${movie_id}`}
                     onClick={this.handleClickMovie}
                   />
                 </li>

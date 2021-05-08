@@ -5,6 +5,10 @@ import SearchResult from '../search_result/search_result';
 
 
 class Nav extends PureComponent {
+  handleClickTitle = () => {
+    window.scroll({top: 0});
+  }
+
   handleClickSearch = () => {
     this.props.startSearch();
   }
@@ -22,7 +26,12 @@ class Nav extends PureComponent {
     if (!this.props.searching) {
       return (
         <nav className={styles.navBar}>
-          <img className={styles.titleImage} src="/images/title.png" alt="title"/>
+          <img 
+            className={styles.titleImage} 
+            src="/images/title.png" 
+            alt="title"
+            onClick={this.handleClickTitle}
+          />
           <div className={styles.searchIcon} onClick={this.handleClickSearch}>
             <i class="fas fa-search fa-xs"></i>
           </div>
@@ -43,6 +52,7 @@ class Nav extends PureComponent {
               className={styles.searchInput} 
               type="text" 
               name="search input" 
+              autocomplete="off"
               placeholder="검색"
               autoFocus
               required

@@ -9,6 +9,15 @@
   padding: 0;
 }
 
+* {
+  scroll-behavior: smooth;
+}
+
+html {
+  height: 100%;
+  overflow-y: scroll;
+}
+
 /* hide scrollbar */
 *::-webkit-scrollbar {
   display: none;

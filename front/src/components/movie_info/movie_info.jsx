@@ -35,7 +35,6 @@ class MovieInfo extends Component {
 
   render() {
     return (
-      this.props.movieData &&
       <>
         <div className={styles.modalBlock} onClick={this.handleClickModalBlock}></div>
         <div ref={this.infoBoxRef} className={styles.infoBox}>
@@ -55,7 +54,7 @@ class MovieInfo extends Component {
           </div>
           <div className={styles.infoSection}>
             <span className={styles.info}>
-              {this.props.movieData.movie_info[0].release_date && this.props.movieData.movie_info[0].release_date}
+              {this.props.movieData.movie_info[0].release_year && this.props.movieData.movie_info[0].release_year}
             </span>
             <span className={styles.info}>
               {this.props.movieData.movie_info[0].running_time && this.props.movieData.movie_info[0].running_time}

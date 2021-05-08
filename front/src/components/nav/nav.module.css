@@ -16,6 +16,7 @@
 
 .titleImage {
   height: 60%;
+  z-index: 11;
 }
 
 .searchBox {

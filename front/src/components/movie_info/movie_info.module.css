@@ -14,7 +14,7 @@
 }
 
 .infoBox {
-  z-index: 11;
+  z-index: 20;
   position: fixed;
   left: 50%;
   top: 55%;
@@ -48,7 +48,7 @@
     rgba(255, 255, 255, 0) 15%,
     rgba(255, 255, 255, 0) 100%
   );
-  z-index: 11;
+  z-index: 21;
 }
 
 .stillcut {
@@ -61,7 +61,7 @@
   position: absolute;
   top: 2%;
   right: 2%;
-  z-index: 12;
+  z-index: 22;
 }
 
 .xButton > i {
@@ -73,7 +73,7 @@
   position: absolute;
   bottom: 5%;
   padding-left: 2rem;
-  z-index: 12;
+  z-index: 22;
 }
 
 .infoSection {

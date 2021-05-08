@@ -29,7 +29,7 @@ class MovieService {
   };
 
   getKeywordSearchResult = async (keyword) => {
-    const url = `${this.home}/search/${keyword}`;
+    const url = `${this.home}search/${keyword}`;
     try {
       const res = await fetch(url, {
         method: "GET",

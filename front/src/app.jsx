@@ -10,7 +10,10 @@ class App extends PureComponent {
   constructor(props) {
     super(props);
     this.state = {
-      dimensionX: window.innerWidth,
+      dimensionX: null,
+      dimensionY: null,
+      bannerImageHeight: null,
+      bannerImageMaxHeight: null,
       frontData: null,
       frontPosterCount: null,
       frontPosterWidth: null,
@@ -68,9 +71,20 @@ class App extends PureComponent {
 
   handleResize = () => {
     const dimensionX = document.body.scrollWidth;
+    const dimensionY = window.innerHeight;
+    const bannerImageHeight = this.props.resizer.getBannerImageHeight(dimensionX);
+    const bannerImageMaxHeight = this.props.resizer.getBannerImageMaxHeight(dimensionY, bannerImageHeight);
     const frontPosterCount = this.props.resizer.getFrontPosterCount(dimensionX);
     const [frontPosterWidth, frontPosterHeight] = this.props.resizer.getFrontPosterSize(dimensionX, frontPosterCount);
-    this.setState({ dimensionX, frontPosterCount, frontPosterWidth, frontPosterHeight });
+    this.setState({ 
+      dimensionX, 
+      dimensionY, 
+      bannerImageHeight, 
+      bannerImageMaxHeight, 
+      frontPosterCount, 
+      frontPosterWidth, 
+      frontPosterHeight 
+    });
   }
 
   componentDidMount() {
@@ -85,6 +99,10 @@ class App extends PureComponent {
       <div className={styles.app}>
         <Route exact path="/">
           <Front 
+            dimensionX={this.state.dimensionX}
+            dimensionY={this.state.dimensionY}
+            bannerImageHeight={this.state.bannerImageHeight}
+            bannerImageMaxHeight={this.state.bannerImageMaxHeight}
             frontData={this.state.frontData}
             frontPosterCount={this.state.frontPosterCount}
             frontPosterWidth={this.state.frontPosterWidth}
@@ -98,11 +116,13 @@ class App extends PureComponent {
             stopSearch={this.stopSearch}
             search={this.search}
           />
-          <MovieInfo 
-            movieData={this.state.movieData}
-            getMovie={this.getMovie}
-            stopDetail={this.stopDetail}
-          />
+          {this.state.movieData &&
+            <MovieInfo 
+              movieData={this.state.movieData}
+              getMovie={this.getMovie}
+              stopDetail={this.stopDetail}
+            />
+          }
         </Route>
       </div>
     )

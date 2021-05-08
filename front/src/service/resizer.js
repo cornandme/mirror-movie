@@ -1,7 +1,14 @@
 class Resizer {
+  getBannerImageHeight = (dimensionX) => {
+    return (dimensionX * 70) / 100 - 50;
+  };
+
+  getBannerImageMaxHeight = (dimensionY, bannerImageHeight) => {
+    return Math.min(dimensionY, bannerImageHeight);
+  };
+
   getFrontPosterCount = (dimensionX) => {
     const frontPosterCount = Math.round(Math.log(dimensionX) / Math.log(1.3) - 20);
-    console.log(frontPosterCount);
     return frontPosterCount;
   };
 
