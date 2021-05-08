@@ -40,14 +40,32 @@ class Rec:
 
         self._upload_to_s3(newest_rec, config['REC']['FRONT_NEWEST'])
 
-    def make_cluster_rec(self):
-        cluster_set = list(self.movie_vectors.groupby('cluster').count().sort_values(by='vector', ascending=False).index)
-        filtered_movie_vectors = self.movie_vectors[self.movie_vectors['cluster'].isin(cluster_set)]
-        cluster_movie_df = pd.merge(filtered_movie_vectors, self.movies_df, on='movie_id', sort=False, validate='one_to_one')
-        cluster_movie_df = cluster_movie_df[['cluster', 'movie_id', 'poster_url']]
+    def make_cluster_rec(self, n):
+        cluster_movie_df = pd.merge(self.movie_vectors, self.movies_df, on='movie_id', sort=False, validate='one_to_one')
+        cluster_movie_df = cluster_movie_df[['cluster', 'movie_id', 'vector', 'poster_url']]
+
+        # 작은 군집 제거
+        clusters = self.movie_vectors['cluster'].value_counts()
+        clusters = clusters[clusters >= 10]
+        clusters = list(clusters.index)
+        cluster_movie_df = cluster_movie_df[cluster_movie_df['cluster'].isin(clusters)]
+
+        # 군집 중심에 가까운 순으로 정렬
+        cluster_movie_df = pd.merge(
+            cluster_movie_df, 
+            self.cluster_df, 
+            left_on='cluster', 
+            right_index=True, 
+            copy=False, 
+            validate='many_to_one'
+        )
+        cluster_movie_df.loc[:, 'vector_y'] = cluster_movie_df['vector_y'].map(lambda x: list(x))
+        cluster_movie_df.loc[:, 'dist'] = cluster_movie_df.apply(lambda x: cosine(x.vector_x, x.vector_y), axis=1)
+        cluster_movie_df = cluster_movie_df[['movie_id', 'cluster', 'dist']].reset_index()
+
         cluster_rec = dict()
-        for cluster in cluster_set:
-            cluster_rec[cluster] = cluster_movie_df[cluster_movie_df['cluster'] == cluster][['movie_id', 'poster_url']][:10].to_dict('records')
+        for cluster in clusters:
+            cluster_rec[cluster] = cluster_movie_df[cluster_movie_df['cluster'] == cluster][['movie_id']][:n].to_dict('records')
         
         self._upload_to_s3(cluster_rec, config['REC']['FRONT_CLUSTER'])
 
