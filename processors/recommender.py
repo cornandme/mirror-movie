@@ -85,6 +85,9 @@ class Rec:
                     'genre': genre
                 })
         genre_df = pd.DataFrame(genre_rows)
+
+        # 랜덤
+        genre_df = genre_df.sample(frac=1)
         
         genre_rec = dict()
         for genre in genres:
