@@ -15,7 +15,7 @@ class Resizer {
   getFrontPosterSize = (dimensionX, frontPosterCount) => {
     const room = dimensionX - 50 - frontPosterCount * 10;
     const frontPosterWidth = room / frontPosterCount;
-    const frontPosterHeight = 1.3 * frontPosterWidth;
+    const frontPosterHeight = 1.5 * frontPosterWidth;
     return [frontPosterWidth, frontPosterHeight];
   };
 
