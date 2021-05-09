@@ -1,9 +1,32 @@
 server {
   listen 80;
-  server_name 3.34.184.51 www.3.34.184.51;
+  server_name mirrormovie.club www.mirrormovie.club;
 
   location / {
     root /home/ubuntu/mirror-movie/front/build;
+    return 301 https://$host$request_uri;
+  }
+
+  location ~ /.well-known {
+    root /home/ubuntu/mirror-movie/front/build;
+  }
+}
+
+server {
+  listen 443 ssl;
+  server_name mirrormovie.club www.mirrormovie.club;
+  ssl_certificate /etc/letsencrypt/live/mirrormovie.club/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/mirrormovie.club/privkey.pem;
+  ssl_protocols TLSv1.2;
+  ssl_session_timeout 1h;
+  ssl_session_cache shared:SSL:50m;
+  ssl_stapling on;
+  ssl_stapling_verify on;
+  add_header Strict-Transport-Security max-age=15768000;
+
+  location / {
+    root /home/ubuntu/mirror-movie/front/build;
+    index index.html;
     try_files $uri $uri/ index.html;
     add_header Cache-Control "no-cache";
   }
@@ -16,6 +39,6 @@ server {
 
   location /api/ {
     include proxy_params;
-    proxy_pass http://0.0.0.0:5000;
+    proxy_pass http://localhost:5000;
   }
 }

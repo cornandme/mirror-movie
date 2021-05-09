@@ -1,12 +1,12 @@
 [Unit]
-Description=Gunicorn instance to serve 'mirror-movie API'
+Description=Gunicorn instance to serve mirror-movie API
 After=network.target
 
 [Service]
 User=ubuntu
 Group=www-data
 WorkingDirectory=/home/ubuntu/mirror-movie/api
-ExecStart=/home/ubuntu/.local/bin/gunicorn --workers=2 --timeout=60 --bind 0.0.0.0:5000 --chdir /home/ubuntu/mirror-movie/api  wsgi:app
+ExecStart=/home/ubuntu/.local/bin/gunicorn --workers=1 --timeout=60 --bind localhost:5000 --chdir /home/ubuntu/mirror-movie/api wsgi:app
 Restart=always
 
 [Install]
