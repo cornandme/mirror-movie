@@ -1,22 +1,22 @@
-@value customBlack from '../../common/colors.css';
+@value customBlack, customGrey, customBlue from '../../common/colors.css';
+@value mobile from '../../common/size.css';
 
 .modalBlock {
-  position: fixed;
-  top: 5rem;
   z-index: 10;
+  position: fixed;
   width: 100%;
-  height: 100%;
+  top: 5rem;
+  bottom: 0;
+  padding: 3rem;
   background-color: customBlack;
   opacity: 0.7;
-  display: flex;
-  overflow-y: scroll;
-  overflow-x: hidden;
+  display: inline-flex;
   padding: 2rem;
 }
 
 .result {
   opacity: 1;
-  padding: 3rem;
+  overflow: scroll;
 }
 
 .noResultMessage {
@@ -30,6 +30,14 @@
   font-size: 2rem;
 }
 
+.stillcutBlock {
+  width: 100%;
+  bottom: 0;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
 .stillcutTitle {
   font-size: 2rem;
   margin-bottom: 2rem;
@@ -37,26 +45,39 @@
 
 .stillcuts {
   width: 100%;
-  min-width: 50rem;
+  height: 100%;
+  min-width: 500px;
   display: flex;
   flex-wrap: wrap;
-  overflow-y: scroll;
-  overflow-x: hidden;
+  align-content: flex-start;
+  flex-shrink: 0;
 }
 
 .stillcutContainer {
-  height: 12vw;
-  padding-right: 0.5rem;
-  padding-bottom: 0.5rem;
+  padding-right: 5px;
+  padding-bottom: 5px;
 }
 
 .stillcut {
-  object-fit: cover;
+  width: 100%;
   height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.stillcutMovieTitle {
+  position: relative;
+  left: 5%;
+  bottom: 3rem;
+  font-size: 1.5rem;
+  font-weight: bold;
+  font-style: italic;
+  text-shadow: 0 0.1rem 0.5rem customBlack;
 }
 
 .similarWordBlock {
-  padding-left: 2rem;
+  position: relative;
+  right: 0;
 }
 
 .similarWordTitle {
@@ -65,8 +86,7 @@
 }
 
 .similarWords {
-  width: 30rem;
-  height: 100%;
+  width: 250px;
   display: flex;
   flex-direction: column;
 }
@@ -74,4 +94,14 @@
 .similarWord {
   font-size: 1.5rem;
   margin-bottom: 2rem;
+}
+
+@media screen and (max-width: mobile) {
+  .modalBlock {
+    flex-direction: column;
+  }
+
+  .similarWordBlock {
+    margin-top: 7rem;
+  }
 }

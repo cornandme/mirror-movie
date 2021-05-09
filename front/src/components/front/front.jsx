@@ -41,6 +41,8 @@ class Front extends Component {
           searching={this.props.searching}
           searchResult={this.props.searchResult}
           lastKeyword={this.props.lastKeyword}
+          searchStillcutWidth={this.props.searchStillcutWidth}
+          searchStillcutHeight={this.props.searchStillcutHeight}
         />
         <main className={styles.main}>
           <header 

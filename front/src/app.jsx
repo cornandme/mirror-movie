@@ -19,6 +19,8 @@ class App extends PureComponent {
       frontPosterWidth: null,
       frontPosterHeight: null,
       movieData: null,
+      searchStillcutWidth: null,
+      searchStillcutHeight: null,
       searching: false,
       searchResult: null,
       lastKeyword: null,
@@ -76,6 +78,7 @@ class App extends PureComponent {
     const bannerImageMaxHeight = this.props.resizer.getBannerImageMaxHeight(dimensionY, bannerImageHeight);
     const frontPosterCount = this.props.resizer.getFrontPosterCount(dimensionX);
     const [frontPosterWidth, frontPosterHeight] = this.props.resizer.getFrontPosterSize(dimensionX, frontPosterCount);
+    const [searchStillcutWidth, searchStillcutHeight] = this.props.resizer.getSearchStillcutSize(dimensionX);
     this.setState({ 
       dimensionX, 
       dimensionY, 
@@ -83,7 +86,9 @@ class App extends PureComponent {
       bannerImageMaxHeight, 
       frontPosterCount, 
       frontPosterWidth, 
-      frontPosterHeight 
+      frontPosterHeight,
+      searchStillcutWidth,
+      searchStillcutHeight
     });
   }
 
@@ -108,6 +113,8 @@ class App extends PureComponent {
             frontPosterWidth={this.state.frontPosterWidth}
             frontPosterHeight={this.state.frontPosterHeight}
             movieData={this.state.movieData}
+            searchStillcutWidth={this.state.searchStillcutWidth}
+            searchStillcutHeight={this.state.searchStillcutHeight}
             searching={this.state.searching}
             searchResult={this.state.searchResult}
             lastKeyword={this.state.lastKeyword}

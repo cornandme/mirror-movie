@@ -40,7 +40,10 @@ class SearchResult extends Component {
             {this.props.searchResult.movies && this.props.searchResult.movies.map((movie) => {
               const src = `${process.env.REACT_APP_STILLCUT_SOURCE}${movie.movie_id}.jpg`;
               return (
-                <li className={styles.stillcutContainer}>
+                <li 
+                  className={styles.stillcutContainer}
+                  style={{ width: this.props.stillcutWidth, height: this.props.stillcutHeight }}
+                >
                   <img 
                     className={styles.stillcut} 
                     src={`${src}`} 

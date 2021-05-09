@@ -66,6 +66,8 @@ class Nav extends PureComponent {
           getMovie={this.props.getMovie}
           searchResult={this.props.searchResult}
           lastKeyword={this.props.lastKeyword}
+          stillcutWidth={this.props.searchStillcutWidth}
+          stillcutHeight={this.props.searchStillcutHeight}
         />
       </>
     );

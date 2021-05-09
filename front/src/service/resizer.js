@@ -18,6 +18,34 @@ class Resizer {
     const frontPosterHeight = 1.3 * frontPosterWidth;
     return [frontPosterWidth, frontPosterHeight];
   };
+
+  getSearchStillcutSize = (dimensionX) => {
+    let searchStillcutWidth;
+    if (dimensionX <= 875) {
+      const room = dimensionX - 40;
+      searchStillcutWidth = room / 2;
+    } else if (dimensionX <= 1080) {
+      const room = dimensionX - 40;
+      searchStillcutWidth = room / 3;
+    } else if (dimensionX <= 1548) {
+      const room = dimensionX - 40 - 270;
+      searchStillcutWidth = room / 3;
+    } else if (dimensionX <= 1972) {
+      const room = dimensionX - 40 - 270;
+      searchStillcutWidth = room / 4;
+    } else if (dimensionX <= 2400) {
+      const room = dimensionX - 40 - 270;
+      searchStillcutWidth = room / 5;
+    } else {
+      const room = dimensionX - 40 - 270;
+      searchStillcutWidth = room / 6;
+    }
+
+    const searchStillcutHeight = 0.6 * searchStillcutWidth;
+    console.log(searchStillcutWidth, searchStillcutHeight);
+
+    return [searchStillcutWidth, searchStillcutHeight];
+  };
 }
 
 export default Resizer;
