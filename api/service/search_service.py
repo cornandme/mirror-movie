@@ -113,7 +113,7 @@ class SearchService(object):
     def get_similar_words_by_vector(self, keyword):
         model = self.word_model.fasttext_word_model
         sim_word_tuples = model.wv.most_similar(keyword)
-        return [word for word, sim in sim_word_tuples if sim > .9]
+        return [word for word, sim in sim_word_tuples if sim > .8]
 
 
     def get_unique_ordered_list(self, li):
