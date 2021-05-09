@@ -42,8 +42,6 @@ class Resizer {
     }
 
     const searchStillcutHeight = 0.6 * searchStillcutWidth;
-    console.log(searchStillcutWidth, searchStillcutHeight);
-
     return [searchStillcutWidth, searchStillcutHeight];
   };
 }
