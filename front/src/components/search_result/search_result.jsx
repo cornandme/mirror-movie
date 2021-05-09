@@ -57,7 +57,7 @@ class SearchResult extends Component {
           </ul>
         </div>
         <div className={styles.similarWordBlock}>
-          <div className={styles.similarWordTitle}>관련 검색어</div>
+          <div className={styles.similarWordTitle}>추천 검색어</div>
           <ul className={styles.similarWords}>
             {this.props.searchResult.similar_words && this.props.searchResult.similar_words.map((word) => {
               return (
