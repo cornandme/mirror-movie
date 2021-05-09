@@ -41,7 +41,7 @@ def create_app():
     # business layer
     movie_info_service = MovieInfoService(movie_info_dao)
     rec_service = RecService(rec_dao)
-    search_service = SearchService(word_model, rec_dao, search_dao)
+    search_service = SearchService(word_model, rec_dao, search_dao, movie_info_dao)
 
     # presentation layer
     view.create_endpoints(app, movie_info_service, rec_service, search_service)

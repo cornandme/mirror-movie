@@ -6,10 +6,11 @@ import pandas as pd
 from scipy.spatial.distance import cosine
 
 class SearchService(object):
-    def __init__(self, word_model, rec_dao, search_dao):
+    def __init__(self, word_model, rec_dao, search_dao, movie_info_dao):
         self.word_model = word_model
         self.rec_dao = rec_dao
         self.search_dao = search_dao
+        self.movie_info_dao = movie_info_dao
         self.komoran = Komoran()
         self.flatten = itertools.chain.from_iterable
 
@@ -17,6 +18,7 @@ class SearchService(object):
     def search(self, keyword):
         result = self.search_hash(keyword)
         
+        # 벡터 검색으로 보충
         if len(result['movies']) < 50:
             movies = self.search_movie_by_vector(keyword)
             result['movies'] = self.get_unique_ordered_list(result['movies'] + movies)[:50]
@@ -24,6 +26,17 @@ class SearchService(object):
         if len(result['similar_words']) < 15:
             keywords = self.get_similar_words_by_vector(keyword)
             result['similar_words'] = self.get_unique_ordered_list(result['similar_words'] + keywords)[:15]
+
+        # 추천 결과에 제목 붙이기
+        movies_df = pd.DataFrame(data={'movie_id': result['movies']})
+        merged_df = pd.merge(
+            movies_df, 
+            self.movie_info_dao.movie_info[['movie_id', 'title_kor']], 
+            on='movie_id',
+            validate='one_to_one'
+        )
+        result['movies'] = merged_df[['movie_id', 'title_kor']].to_dict('records')
+        
 
         return result
 
