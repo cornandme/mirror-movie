@@ -1,5 +1,6 @@
 class MovieService {
   constructor() {
+    this.origin = process.env.REACT_APP_REQUEST_ORIGIN;
     this.home = process.env.REACT_APP_API_HOME;
   }
 
@@ -7,7 +8,10 @@ class MovieService {
     try {
       const res = await fetch(this.home, {
         method: "GET",
-        headers: { Accept: "application/json" },
+        headers: {
+          Origin: this.origin,
+          Accept: "application/json",
+        },
       });
       return await res.json();
     } catch (e) {
@@ -20,7 +24,10 @@ class MovieService {
     try {
       const res = await fetch(url, {
         method: "GET",
-        headers: { Accept: "application/json" },
+        headers: {
+          Origin: this.origin,
+          Accept: "application/json",
+        },
       });
       return await res.json();
     } catch (e) {
@@ -33,7 +40,10 @@ class MovieService {
     try {
       const res = await fetch(url, {
         method: "GET",
-        headers: { Accept: "application/json" },
+        headers: {
+          Origin: this.origin,
+          Accept: "application/json",
+        },
       });
       return await res.json();
     } catch (e) {
