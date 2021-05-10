@@ -3,6 +3,7 @@ import json
 import boto3
 import botocore
 from flask import Flask
+from flask import make_response
 from flask_cors import CORS
 
 with open('../config.json') as f:
@@ -20,7 +21,14 @@ from view import view
 
 def create_app():
     app = Flask(__name__)
+    app.config['CORS_HEADERS'] = 'Access-Control-Allow-Origin'
     CORS(app, resources={r'/api/*':{'origins': 'https://mirrormovie.club:5000'}})
+
+    @app.after_request
+    def add_security_headers(resp):
+        resp.headers['Access-Control-Allow-Origin']='https://mirrormovie.club:5000'
+        return resp
+
 
     # persistence layer
     s3 = boto3.client(
