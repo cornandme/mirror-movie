@@ -1,3 +1,4 @@
+import argparse
 import json
 
 import boto3
@@ -7,6 +8,10 @@ from flask_cors import CORS
 
 with open('../config.json') as f:
     config = json.load(f)
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-mode', type=str, default='prod')
+args = parser.parse_args()
 
 from model import MovieInfoDAO
 from model import RecDAO
@@ -18,10 +23,19 @@ from service import SearchService
 from view import view
 
 
-def create_app():
+def create_app(mode=args.mode):
     app = Flask(__name__)
     app.config['CORS_HEADERS'] = 'Access-Control-Allow-Origin'
-    CORS(app, resources={r'/api/*':{'origins': 'https://mirrormovie.club'}})
+
+    if mode == 'prod':
+        CORS(app, resources={r'/api/*':{'origins': 'https://mirrormovie.club'}})
+    elif mode == 'dev':
+        CORS(app)
+        print('dev mode')
+        pass
+    else:
+        print('wrong mode. check your command.')
+        return
 
     # persistence layer
     s3 = boto3.client(
