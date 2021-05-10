@@ -1,5 +1,6 @@
 server {
   listen 80;
+  listen [::]:80;
   server_name mirrormovie.club www.mirrormovie.club;
 
   location / {
@@ -14,6 +15,7 @@ server {
 
 server {
   listen 443 ssl;
+  listen [::]:443 ssl;
   server_name mirrormovie.club www.mirrormovie.club;
   ssl_certificate /etc/letsencrypt/live/mirrormovie.club/fullchain.pem;
   ssl_certificate_key /etc/letsencrypt/live/mirrormovie.club/privkey.pem;
@@ -39,6 +41,6 @@ server {
 
   location /api/ {
     include proxy_params;
-    proxy_pass http://localhost:5000;
+    proxy_pass http://localhost:5000/api/;
   }
 }
