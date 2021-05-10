@@ -180,3 +180,8 @@ scrapers/logs/*
 
 # file
 *.pickle
+
+# react .env
+.env
+.env.development
+.env.production
