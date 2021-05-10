@@ -20,7 +20,7 @@ from view import view
 
 def create_app():
     app = Flask(__name__)
-    CORS(app)
+    CORS(app, resources={r'/api/*':{'origins': 'https://mirrormovie.club:5000'}})
 
     # persistence layer
     s3 = boto3.client(
