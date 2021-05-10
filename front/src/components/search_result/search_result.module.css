@@ -27,20 +27,20 @@
 }
 
 .noResultMessage > span {
-  font-size: 2rem;
+  font-size: 20px;
 }
 
 .stillcutBlock {
   width: 100%;
   bottom: 0;
-  margin-bottom: 2rem;
+  margin-bottom: 20px;
   display: flex;
   flex-direction: column;
 }
 
 .stillcutTitle {
-  font-size: 2rem;
-  margin-bottom: 2rem;
+  font-size: 20px;
+  margin-bottom: 20px;
 }
 
 .stillcuts {
@@ -68,11 +68,11 @@
 .stillcutMovieTitle {
   position: relative;
   left: 5%;
-  bottom: 3rem;
-  font-size: 1.5rem;
+  bottom: 30px;
+  font-size: 15px;
   font-weight: bold;
   font-style: italic;
-  text-shadow: 0 0.1rem 0.5rem customBlack;
+  text-shadow: 0 1px 5px customBlack;
 }
 
 .similarWordBlock {
@@ -81,8 +81,8 @@
 }
 
 .similarWordTitle {
-  font-size: 2rem;
-  margin-bottom: 2rem;
+  font-size: 20px;
+  margin-bottom: 20px;
 }
 
 .similarWords {
@@ -92,8 +92,8 @@
 }
 
 .similarWord {
-  font-size: 1.5rem;
-  margin-bottom: 2rem;
+  font-size: 15px;
+  margin-bottom: 20px;
 }
 
 @media screen and (max-width: mobile) {
@@ -102,6 +102,6 @@
   }
 
   .similarWordBlock {
-    margin-top: 7rem;
+    margin-top: 70px;
   }
 }
