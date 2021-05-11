@@ -48,8 +48,7 @@ class Front extends Component {
           <header 
             className={styles.headerBox}
             style={{
-              'height': this.props.bannerImageHeight,
-              'max-height': this.props.bannerImageMaxHeight
+              'height': this.props.bannerImageHeight
             }}
           >
             <img 

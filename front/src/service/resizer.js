@@ -1,9 +1,6 @@
 class Resizer {
-  getBannerImageHeight = (dimensionX) => {
-    return (dimensionX * 70) / 100 - 50;
-  };
-
-  getBannerImageMaxHeight = (dimensionY, bannerImageHeight) => {
+  getBannerImageHeight = (dimensionX, dimensionY) => {
+    const bannerImageHeight = (dimensionX * 70) / 100 - 50;
     return Math.min(dimensionY, bannerImageHeight);
   };
 

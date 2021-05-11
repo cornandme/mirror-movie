@@ -13,7 +13,6 @@ class App extends PureComponent {
       dimensionX: null,
       dimensionY: null,
       bannerImageHeight: null,
-      bannerImageMaxHeight: null,
       frontData: null,
       frontPosterCount: null,
       frontPosterWidth: null,
@@ -74,8 +73,7 @@ class App extends PureComponent {
   handleResize = () => {
     const dimensionX = document.body.scrollWidth;
     const dimensionY = window.innerHeight;
-    const bannerImageHeight = this.props.resizer.getBannerImageHeight(dimensionX);
-    const bannerImageMaxHeight = this.props.resizer.getBannerImageMaxHeight(dimensionY, bannerImageHeight);
+    const bannerImageHeight = this.props.resizer.getBannerImageHeight(dimensionX, dimensionY);
     const frontPosterCount = this.props.resizer.getFrontPosterCount(dimensionX);
     const [frontPosterWidth, frontPosterHeight] = this.props.resizer.getFrontPosterSize(dimensionX, frontPosterCount);
     const [searchStillcutWidth, searchStillcutHeight] = this.props.resizer.getSearchStillcutSize(dimensionX);
@@ -83,7 +81,6 @@ class App extends PureComponent {
       dimensionX, 
       dimensionY, 
       bannerImageHeight, 
-      bannerImageMaxHeight, 
       frontPosterCount, 
       frontPosterWidth, 
       frontPosterHeight,
