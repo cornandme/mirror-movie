@@ -13,6 +13,7 @@ class App extends PureComponent {
       dimensionX: null,
       dimensionY: null,
       bannerImageHeight: null,
+      movieListBoardMove: null,
       frontData: null,
       frontPosterCount: null,
       frontPosterWidth: null,
@@ -74,6 +75,7 @@ class App extends PureComponent {
     const dimensionX = document.body.scrollWidth;
     const dimensionY = window.innerHeight;
     const bannerImageHeight = this.props.resizer.getBannerImageHeight(dimensionX, dimensionY);
+    const movieListBoardMove = this.props.resizer.getMovieListBoardMove(bannerImageHeight);
     const frontPosterCount = this.props.resizer.getFrontPosterCount(dimensionX);
     const [frontPosterWidth, frontPosterHeight] = this.props.resizer.getFrontPosterSize(dimensionX, frontPosterCount);
     const [searchStillcutWidth, searchStillcutHeight] = this.props.resizer.getSearchStillcutSize(dimensionX);
@@ -81,6 +83,7 @@ class App extends PureComponent {
       dimensionX, 
       dimensionY, 
       bannerImageHeight, 
+      movieListBoardMove,
       frontPosterCount, 
       frontPosterWidth, 
       frontPosterHeight,
@@ -104,7 +107,7 @@ class App extends PureComponent {
             dimensionX={this.state.dimensionX}
             dimensionY={this.state.dimensionY}
             bannerImageHeight={this.state.bannerImageHeight}
-            bannerImageMaxHeight={this.state.bannerImageMaxHeight}
+            movieListBoardMove={this.state.movieListBoardMove}
             frontData={this.state.frontData}
             frontPosterCount={this.state.frontPosterCount}
             frontPosterWidth={this.state.frontPosterWidth}

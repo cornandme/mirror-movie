@@ -1,7 +1,11 @@
 class Resizer {
   getBannerImageHeight = (dimensionX, dimensionY) => {
-    const bannerImageHeight = (dimensionX * 70) / 100 - 50;
-    return Math.min(dimensionY, bannerImageHeight);
+    const bannerImageHeight = 0.7 * dimensionX;
+    return Math.min(dimensionY, bannerImageHeight) - 50;
+  };
+
+  getMovieListBoardMove = (bannerImageHeight) => {
+    return 0.25 * bannerImageHeight;
   };
 
   getFrontPosterCount = (dimensionX) => {

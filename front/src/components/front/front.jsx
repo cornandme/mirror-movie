@@ -9,13 +9,13 @@ class Front extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      bannerImgNum: null
+      bannerImgNum: null,
     }
   }
 
   componentDidMount() {
     this.pickBannerImage();
-    this.bannerInterval = setInterval(() => this.pickBannerImage(), 1800000);
+    this.bannerInterval = setInterval(() => this.pickBannerImage, 1800000);
   }
 
   componentWillUnmount() {
@@ -60,6 +60,11 @@ class Front extends Component {
           <div className={styles.movieListBoardBg}>
             <ul 
               className={styles.movieListBoard}
+              style={{
+                top: `${-this.props.movieListBoardMove}px`,
+                paddingTop: `${this.props.movieListBoardMove / 2}px`,
+                background: `linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 1) ${this.props.movieListBoardMove}px)`
+              }}
             >
               {this.props.frontData &&
                 this.props.frontData.front_rec.map((obj) => {
