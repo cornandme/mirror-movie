@@ -5,6 +5,11 @@ import SearchResult from '../search_result/search_result';
 
 
 class Nav extends PureComponent {
+  constructor(props) {
+    super(props);
+    this.throttled = this.throttle(this.handleKeywordInput, 250);
+  }
+
   handleClickTitle = () => {
     window.scroll({top: 0});
   }
@@ -20,6 +25,19 @@ class Nav extends PureComponent {
   handleKeywordInput = (event) => {
     const keyword = event.target.value;
     this.props.search(keyword);
+  }
+
+  throttle = (callback, interval) => {
+    let lastCallback;
+    let lastCall = Date.now() - (interval + 1);
+
+    return (...args) => {
+      clearTimeout(lastCallback);
+      lastCallback = setTimeout(() => {
+        callback.apply(this, args);
+        lastCall = Date.now();
+      }, interval - (Date.now() - lastCall));
+    }
   }
 
   render() {
@@ -56,7 +74,7 @@ class Nav extends PureComponent {
               placeholder="검색"
               autoFocus
               required
-              onChange={this.handleKeywordInput}
+              onChange={this.throttled}
             />
           </div>
         </nav>
