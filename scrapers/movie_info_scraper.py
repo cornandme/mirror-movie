@@ -72,7 +72,14 @@ class MovieScraper:
             pass
         
         try:
-            self.movie['running_time'] = meta_tags.find_all('span')[2].get_text(strip=True)
+            tags = meta_tags.find_all('span')
+            texts = [tag.get_text(strip=True) for tag in tags]
+            p = re.compile('^[0-9]{1,4}분$')
+            for text in texts:
+                if p.match(text):
+                    running_time = text
+                    break
+            self.movie['running_time'] = running_time or None
         except Exception as e:
             pass
         
@@ -84,7 +91,14 @@ class MovieScraper:
         
         try:
             release_tags = meta_tags.find_all('a', {'href': re.compile('open=')})
-            self.movie['release_date'] = ''.join([tag.get_text(strip=True) for tag in release_tags])
+            p = re.compile('^[0-9]{4}$|^[0-9]{6}$|^[0-9]{8}$')
+            for tag in release_tags[::-1]:
+                href = tag['href']
+                text = href[href.index('=')+1:]
+                if p.match(text):
+                    release_date = text
+                    break
+            self.movie['release_date'] = release_date or None
         except Exception as e:
             pass
 
@@ -311,11 +325,12 @@ class MovieScraper:
 
             soup = BeautifulSoup(html, 'html.parser')
             try:
-                tags = soup.find('table', {'class': 'list_ranking'}).find_all('a')
+                titles = soup.find('table', {'class': 'list_ranking'}).find_all('td', {'class': 'title'})
+                tags = [title.find('a') for title in titles]
+                urls = [tag['href'] for tag in tags]
             except Exception as e:
                 self.logger.error(e)
-                
-            urls = [tag['href'] for tag in tags]
+
             for url in urls:
                 movie_id = url[url.index('=')+1:]
                 if self.db[config["DB"]["MOVIES"]].find_one({ '_id': movie_id}) is None:
