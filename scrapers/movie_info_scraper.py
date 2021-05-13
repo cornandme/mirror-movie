@@ -233,16 +233,21 @@ class MovieScraper:
         self.movie['sub_actor_ids'] = sub_actor_ids
         self.makers = maker_li
 
-    def insert_data_to_db(self):
+    def upsert_data_to_db(self):
         try:
-            self.db[config["DB"]["MOVIES"]].insert_one(self.movie)
+            self.db[config["DB"]["MOVIES"]].replace_one({'_id': self.movie['_id']}, self.movie, upsert=True)
         except Exception as e:
             self.logger.error(e)
             pass
 
+        try:
+            self.db[config['DB']['COMMENT_QUEUE']].update_one({}, {'$push': {'movies': {'$each': self.movie['_id']}}})
+        except Exception as e:
+            self.logger.error(e)
+
         for maker in self.makers:
             try:
-                self.db[config["DB"]["MAKERS"]].insert_one(maker)
+                self.db[config["DB"]["MAKERS"]].replace_one({'_id': maker['_id']}, maker, upsert=True)
             except pymongo.errors.DuplicateKeyError as dke:
                 pass
             except Exception as e:
@@ -385,7 +390,7 @@ def main():
         scraper.scrape_basic()
         sleep()
         scraper.scrape_detail()
-        scraper.insert_data_to_db()
+        scraper.upsert_data_to_db()
         movie_count += 1
         maker_count += len(scraper.get_makers())
         scraper.add_movie_ids()
