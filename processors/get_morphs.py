@@ -68,7 +68,6 @@ class MorphExtractor:
         else:
             self.pos_df.loc[:, 'morphs'] = self.pos_df['tokens'].map(lambda x: [pos[0] for pos in x if pos[1] in self.pos_target])
         morph_df = self.pos_df.drop(columns=['tokens'])
-        morph_df = morph_df[morph_df['morphs'].astype('str') != '[]']
         
         self.morph_df = morph_df
 
@@ -76,12 +75,26 @@ class MorphExtractor:
     def save_morphs(self):
         client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
         db = client[config['DB']['DATABASE']]
+        tokens = db[config['DB']['USER_REVIEW_TOKENS']]
         morphs = db[config['DB']['USER_REVIEW_MORPHS']]
         
         morphs_dict = self.morph_df.to_dict('records')
         try:
             for doc in morphs_dict:
+                tokens.update_one({'_id': doc['_id']}, {'$set': {'morphed': True}}, upsert=True)
+        except Exception as e:
+            self.logger.error(e)
+        finally:
+            client.close()
+        
+        self.morph_df = self.morph_df[self.morph_df['morphs'].astype('str') != '[]']
+        morphs_dict = self.morph_df.to_dict('records')
+        comment_count = len(morphs_dict)
+        try:
+            for doc in morphs_dict:
                 morphs.insert_one(doc)
+            self.logger.info(f'{comment_count} comments are morphed.')
+            print(f'{comment_count} comments are morphed.')
         except Exception as e:
             self.logger.error(e)
         finally:
