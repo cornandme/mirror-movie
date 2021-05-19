@@ -17,48 +17,43 @@ with open('../config.json') as f:
 class MorphExtractor:
     def __init__(self, pos_chunk, pos_target):
         self.logger = logging.getLogger()
-        self.target_row_count = self._target_row_count()
         self.pos_chunk = pos_chunk
         self.pos_target = pos_target
-        self.current_row = 0
+        self._set_iter_count()
 
         print(pos_chunk)
         print(pos_target)
 
 
-    def clean_morph_db(self):
+    def _set_iter_count(self):
         client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
         db = client[config['DB']['DATABASE']]
-        morphs = db[config['DB']['USER_REVIEW_MORPHS']]
+        tokens = db[config['DB']['USER_REVIEW_TOKENS']]
 
         try:
-            morphs.drop()
-            if morphs.count_documents() != 0:
-                self.logger.error(f'db is not empty!!')
-                raise Exception
+            rows = tokens.count_documents({'morphed': {'$in': [None, False]}})
         except Exception as e:
             self.logger.error(e)
         finally:
             client.close()
-        
+        self.iter = (rows // self.pos_chunk + 1) if rows > 0 else 0
+
     
     def get_pos(self):
         client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
         db = client[config['DB']['DATABASE']]
-        pos_path = db[config['DB']['USER_REVIEW_TOKENS']]
-
-        row_to = self.current_row + self.pos_chunk
-        print(f'getting pos from {self.current_row} to {row_to}')
+        tokens = db[config['DB']['USER_REVIEW_TOKENS']]
         
         try:
-            pos = pos_path.find()[self.current_row:row_to]
-            pos_df = pd.DataFrame(pos)[['movie_id', 'tokens']]
+            pos = tokens.find({'morphed': {'$in': [None, False]}})[:self.pos_chunk]
+            pos_df = pd.DataFrame(pos)[['_id', 'movie_id', 'tokens']]
         except Exception as e:
             self.logger.error(e)
         finally:
             client.close()
 
-        self.current_row = row_to
+        print(len(pos_df))
+        print(pos_df.iloc[0])
         self.pos_df = pos_df
 
 
@@ -118,14 +113,16 @@ class MorphExtractor:
 
 def main():
     morph_extractor = MorphExtractor(pos_chunk=args.pos_chunk, pos_target=args.pos_target)
-    morph_extractor.clean_morph_db()
     
+    iter_count = 0
     while True:
-        if morph_extractor.current_row > morph_extractor.target_row_count:
-            break
+        print(f'iter: {iter_count}')
+        if iter_count >= morph_extractor.iter:
+            return
         morph_extractor.get_pos()
         morph_extractor.get_morphs()
         morph_extractor.save_morphs()
+        iter_count += 1
 
 
 if __name__=='__main__':
@@ -147,5 +144,5 @@ if __name__=='__main__':
     main()
 
     duration = str(timedelta(seconds=(time.time() - start_time)))
-    logger.info(f'Finishing get_morphs. duration: {duration}.')
-    print(f'Finishing get_morphs. duration: {duration}.')
+    logger.info(f'Finishing get_morphs at {datetime.now()}. duration: {duration}.')
+    print(f'Finishing get_morphs at {datetime.now()}. duration: {duration}.')
