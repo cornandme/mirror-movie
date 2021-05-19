@@ -196,22 +196,6 @@ class Rec:
 
     def _load_movies_df(self):
         movies_df = self._load_from_s3(config['AWS']['S3_BUCKET'], config['DATA']['MOVIE_INFO'])
-
-        # filter
-        movies_df = movies_df[~(movies_df['title_kor'].isna()
-                        | movies_df['release_date'].isna()
-                        | (movies_df['release_date'] == '')
-                        | (movies_df['review_count'] == 0)
-                        | movies_df['poster_url'].isna()
-                        | movies_df['stillcut_url'].isna()
-                        | (movies_df['release_date'].str.len() > 10)
-                        | (movies_df['release_date'].str.len() < 4)
-                        | (movies_df['release_year'] == 'None')
-                        | (movies_df['review_count'] < 30)
-                    )]
-        movies_df = movies_df[~movies_df['genre'].map(set(['에로']).issubset)]
-
-        movies_df = movies_df.rename(columns={'_id': 'movie_id'})
         return movies_df
 
     def _load_makers_df(self):
