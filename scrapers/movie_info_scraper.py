@@ -12,6 +12,7 @@ from urllib.error import URLError
 
 from bs4 import BeautifulSoup
 import requests
+import pandas as pd
 
 import boto3
 import pymongo
@@ -317,11 +318,23 @@ class MovieScraper:
         return html
 
     def _set_init_movie_list(self):
+        movie_ids = []
+
+        # db comment collection에서 수집
+        movies = self.db[config['DB']['MOVIES']]
+        info_movie_ids = pd.DataFrame(movies.find({}, {'_id': 1}))
+
+        reviews = self.db[config['DB']['USER_REVIEWS']]
+        movie_ids_from_reviews = pd.DataFrame(reviews.find({}, {'_id': 0, 'movie_id': 1})).drop_duplicates()
+        
+        target_ids = movie_ids_from_reviews[~movie_ids_from_reviews['movie_id'].isin(info_movie_ids['_id'])]['movie_id'].to_list()
+        movie_ids += target_ids
+
+        # 랭킹 페이지에서 수집
         day = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
         print(day)
         root_path = config["SCRAPER"]["NAVER_MOVIE_RANKING_PATH"]
         queries = ['cnt', 'cur', 'pnt']
-        movie_ids = []
 
         for query in queries:
             path = f'{root_path}?sel={query}&date={day}'
@@ -341,6 +354,8 @@ class MovieScraper:
                 if self.db[config["DB"]["MOVIES"]].find_one({ '_id': movie_id}) is None:
                     movie_ids.append(movie_id)
             sleep()
+        
+        movie_ids = list(set(movie_ids))
 
         try:
             self.db[config["DB"]["MOVIE_QUEUE"]].drop()
