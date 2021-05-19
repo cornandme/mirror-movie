@@ -165,13 +165,14 @@ class MovieScraper:
                 part = tag.find('em', {'class': 'p_part'}).get_text(strip=True)
                 
                 # construct maker document
+                role = 'actor_main' if part == '주연' else 'actor_sub'
                 maker_li.append({
-                    '_id': f"{maker_id}_{self.movie['_id']}",
+                    '_id': f"{maker_id}_{self.movie['_id']}_{role}",
                     'maker_id': maker_id,
                     'name': name,
                     'movie_id': self.movie['_id'], 
                     'movie_poster_url': self.movie['poster_url'], 
-                    'role': 'actor_main' if part == '주연' else 'actor_sub',
+                    'role': role,
                     'release_date': self.movie['release_date']
                 })
                 
@@ -194,7 +195,7 @@ class MovieScraper:
             director_id = director_url[idx+1:]
 
             maker_li.append({
-                '_id': f"{director_id}_{self.movie['_id']}",
+                '_id': f"{director_id}_{self.movie['_id']}_director",
                 'maker_id': director_id,
                 'name': director_name,
                 'movie_id': self.movie['_id'],
@@ -215,7 +216,7 @@ class MovieScraper:
             writer_name = writer_tag.get_text(strip=True)
 
             maker_li.append({
-                '_id': f"{writer_id}_{self.movie['_id']}",
+                '_id': f"{writer_id}_{self.movie['_id']}_writer",
                 'maker_id': writer_id,
                 'name': writer_name,
                 'movie_id': self.movie['_id'],
@@ -361,6 +362,9 @@ class MovieScraper:
             self.db[config["DB"]["MOVIE_QUEUE"]].insert_one({'_id': 1, 'movies': movie_ids})
         except Exception as e:
             self.logger.error(e)
+
+        self.logger.info(f'{len(movie_ids)} movies are added to queue.')
+        print(f'{len(movie_ids)} movies are added to queue.')
 
         return movie_ids
 

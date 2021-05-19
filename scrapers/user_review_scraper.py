@@ -13,6 +13,7 @@ from urllib.error import URLError
 
 from bs4 import BeautifulSoup
 import requests
+import pandas as pd
 
 import boto3
 import pymongo
@@ -29,6 +30,7 @@ class UserReviewScraper:
         self.db = self.client[config["DB"]["DATABASE"]]
         self.session = requests.Session()
         self.headers = config["SCRAPER"]["HEADERS"]
+        self.update_checker = self._set_update_checker()
         self.queue = self._set_queue()
         self.current_target = None
         self.last_update_date = None
@@ -67,7 +69,9 @@ class UserReviewScraper:
         
     def set_target(self):
         self.current_target = self.queue.get()
-        self.last_update_date = self.db[config["DB"]["USER_REVIEWS"]].find_one({'movie_id': self.current_target}, sort=[('date', -1)])
+        self.last_update_date = self.update_checker.loc[self.current_target, 'date'] \
+                                if self.current_target in self.update_checker.index else None
+
 
     def check_validation(self):
         path = f"{config['SCRAPER']['NAVER_MOVIE_REVIEW_PATH_PREFIX']}{self.current_target}{config['SCRAPER']['NAVER_MOVIE_REVIEW_PATH_QUERY']}"
