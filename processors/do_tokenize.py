@@ -18,7 +18,7 @@ with open('../config.json') as f:
 
 
 class Tokenizer(object):
-    def __init__(self, test=False, cores=0, rows=0):
+    def __init__(self, test, cores, rows):
         self.logger = logging.getLogger()
         self.test = test
         self.n_processes = self._set_n_processes(cores)
@@ -91,15 +91,25 @@ class Tokenizer(object):
         user_reviews = db[config['DB']['USER_REVIEWS']]
 
         tokens_li = self.tokens_df.to_dict('records')
-
         try:
-            for tokens in tokens_li:
-                review_tokens.insert_one(tokens)
             if self.test:
                 pass
             else:
                 for tokens in tokens_li:
                     user_reviews.update_one({'_id': tokens['_id']}, {'$set': {'tokenized': True}})
+        except Exception as e:
+            self.logger.error(e)
+        finally:
+            client.close()
+
+        self.tokens_df = self.tokens_df[self.tokens_df['tokens'].astype('str') != '[]']
+        tokens_li = self.tokens_df.to_dict('records')
+        comment_count = len(tokens_li)
+        try:
+            for tokens in tokens_li:
+                review_tokens.insert_one(tokens)
+            self.logger.info(f'{len(tokens_li)} comments are tokenized.')
+            print(f'{len(tokens_li)} comments are tokenized.')
         except Exception as e:
             self.logger.error(e)
         finally:
@@ -181,7 +191,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-test', type=bool, default=0, help='use small data set for test')
     parser.add_argument('-cores', type=int, default=0, help='how many cores ')
-    parser.add_argument('-rows', type=int, default=0, help='limit rows to process.')
+    parser.add_argument('-rows', type=int, default=1000000, help='limit rows to process.')
     args = parser.parse_args()
 
     logging.basicConfig(
