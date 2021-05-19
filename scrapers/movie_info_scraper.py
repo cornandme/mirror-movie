@@ -133,7 +133,6 @@ class MovieScraper:
         if self.movie.get('stillcut_url') != None:
             self._upload_to_s3(stillcut_url, stillcut_s3_path)
         
-        self.movie['review_count'] = 0
         self.movie['updated_at'] = datetime.now()
         
     def scrape_detail(self):

@@ -127,12 +127,6 @@ class UserReviewScraper:
                 self.logger.error(e)
             finally:
                 pass
-    
-    def update_movies(self):
-        try:
-            self.db[config['DB']['MOVIES']].update_one({'_id': self.current_target}, {'$set': {'updated_at': datetime.now()}, '$inc': {'review_count': self.review_count}}, upsert=True)
-        except Exception as e:
-            self.logger.error(e)
 
     def reset_reviews(self):
         self.reviews = []
@@ -309,7 +303,6 @@ def main():
         soup = scraper.check_validation()
         sleep()
         if not scraper.get_valid():
-            scraper.update_movies()
             scraper.reset_status()
             continue
 
@@ -321,7 +314,6 @@ def main():
                 break
             scraper.scrape_review_page(soup)
             scraper.insert_reviews_to_db()
-            scraper.update_movies()
             review_count += scraper.get_review_count()
             scraper.reset_reviews()
             scraper.increase_current_page()
