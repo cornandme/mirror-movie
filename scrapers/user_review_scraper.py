@@ -151,15 +151,68 @@ class UserReviewScraper:
 
     def _set_queue(self):
         q = queue.Queue()
-        time_filter = datetime.now() + timedelta(days=-30)
-        try:
-            documents = self.db[config['DB']['MOVIES']].aggregate([{'$match': {'$or': [{'review_count': 0}, {'updated_at': {'$lt': time_filter}}]}}, {'$sort': {'updated_at': 1}}])
-        except Exception as e:
-            self.logger.error(e)
 
-        for doc in documents:
-            q.put(doc['_id'])
+        # db 큐 목록 넘겨받기
+        comment_queue = self.db[config['DB']['COMMENT_QUEUE']]
+        movie_ids = []
+        if comment_queue.count_documents({}) == 0 or len(comment_queue.find_one()['movies']) == 0:
+            pass
+        else:
+            try:
+                movie_ids = [movie_id for movie_id in comment_queue.find_one()['movies']]
+                comment_queue.update_one({'_id': 1}, {'$set': {'movies': []}})
+            except Exception as e:
+                self.logger.error(e)
+        print(f'{len(movie_ids)} from db')
+
+        # 신규 코멘트 목록에서 영화 리스트 받아오기
+        path_root = config['SCRAPER']['NAVER_MOVIE_COMMENT_ROOT_PATH']
+        page = 1
+        last_date = self.update_checker['date'].max()[2:-4]
+
+        new_movie_ids = []
+        while True:
+            # 정지조건
+            if page > 1000:
+                break
+
+            path = f'{path_root}?&page={page}'
+            html = self.session.get(path, headers=self.headers).text
+            soup = BeautifulSoup(html, 'html.parser')
+            
+            # 날짜 확인
+            comment_date = soup.find('table', {'class': 'list_netizen'}) \
+                .find('tbody').find('tr').find(lambda tag: tag.name == 'td' and tag.get('class') == ['num']) \
+                .find('br').next_sibling \
+                .replace('.', '')
+            if comment_date < last_date:
+                break
+
+            # 영화 id 수집
+            tags = soup.find('table', {'class': 'list_netizen'}).find('tbody').find_all('td', {'class': 'title'})
+            for tag in tags:
+                movie_id = tag.find('a', {'class': 'movie color_b'})['href'] \
+                    .replace('?st=mcode&sword=', '').replace('&target=after', '')
+                new_movie_ids.append(movie_id)
+            
+            # 다음 페이지
+            page += 1
+            sleep()
+        print(f'{len(new_movie_ids)} movie ids total')
+        
+        # 큐에 id 넣기
+        for id in set(movie_ids + new_movie_ids):
+            q.put(id)
+        
         return q
+
+
+    def _set_update_checker(self):
+        reviews = self.db[config['DB']['USER_REVIEWS']]
+        update_checker = pd.DataFrame(reviews.find({}, {'_id': 0, 'movie_id': 1, 'date': 1})) \
+                            .groupby('movie_id').max()
+        return update_checker
+
 
     def _get_html(self, path):
         self.headers['path'] = path
