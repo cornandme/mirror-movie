@@ -8,6 +8,7 @@ import pickle
 import time
 
 import boto3
+from io import BytesIO
 import joblib
 import numpy as np
 import pandas as pd
@@ -23,10 +24,34 @@ def main(n_clusters):
     # load data
     movie_vectors = pickle.load(open(config['PROCESS']['MOVIE_VECTORS_PATH'], 'rb'))
 
+    # filter movie
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id=config['AWS']['AWS_ACCESS_KEY'],
+        aws_secret_access_key=config['AWS']['AWS_SECRET_KEY']
+    )
 
-    # l2 Normalization
-    X = Normalizer().fit_transform(list(movie_vectors['vector']))
+    def _load_from_s3(bucket, path):
+        with BytesIO() as f:
+            p = s3.download_fileobj(bucket, path, f)
+            f.seek(0)
+            data = joblib.load(f)
+        return data
 
+    def _load_movies_df():
+        movies_df = _load_from_s3(config['AWS']['S3_BUCKET'], config['DATA']['MOVIE_INFO'])
+        return movies_df
+
+    movies_df = _load_movies_df()
+    movie_vectors = movie_vectors[
+        movie_vectors.index.isin(
+            movies_df[movies_df['review_count'] >= 30]['movie_id']
+        )
+    ]
+
+
+    # train
+    X = Normalizer(norm='l2').fit_transform(list(movie_vectors['vector']))
 
     def train_kmeans_model(X, k):
         model = KMeans(
