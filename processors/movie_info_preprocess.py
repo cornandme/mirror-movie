@@ -45,11 +45,11 @@ class MovieInfoPreprocessor(object):
             | self.movies_df['genre'].map(set(['공연실황']).issubset)
         )]
 
+        # 코멘트 수 필터
+        self.movies_df = self.movies_df[self.movies_df['review_count'] > 0]
+
         # 코멘트 통계 추가
         self.add_review_stat()
-        
-        # 코멘트 수 필터
-        self.movies_df = self.movies_df[self.movies_df['review_count'] >= 30]
         
         # 개봉년도 추출
         self.get_year_column()
