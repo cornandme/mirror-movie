@@ -3,6 +3,7 @@ from datetime import datetime
 from datetime import timedelta
 import json
 import logging
+import multiprocessing as mp
 import pickle
 import time
 
@@ -10,6 +11,8 @@ from pymongo import MongoClient
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cosine
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import Normalizer
 
 from io import BytesIO
 import joblib
@@ -20,7 +23,7 @@ with open('../config.json') as f:
 
 
 class Rec:
-    def __init__(self):
+    def __init__(self, cores):
         self.logger = logging.getLogger()
         self.s3 = boto3.client(
             's3',
@@ -33,6 +36,13 @@ class Rec:
         self.makers_df = self._load_makers_df()
         self.cluster_df = self._load_cluster_df()
         self.movie_vectors = self._load_movie_vectors()
+        self.n_processes = self._set_n_processes(cores)
+
+        try:
+            mp.set_start_method('spawn')
+        except RuntimeError:
+            pass
+
 
     def make_newest_rec(self, n):
         newest_df = self.movies_df.sort_values(by='release_date', ascending=False)
@@ -41,15 +51,44 @@ class Rec:
 
         self._upload_to_s3(newest_rec, config['REC']['FRONT_NEWEST'])
 
+
     def make_cluster_rec(self, n):
         cluster_movie_df = pd.merge(self.movie_vectors, self.movies_df, on='movie_id', sort=False, validate='one_to_one')
-        cluster_movie_df = cluster_movie_df[['cluster', 'movie_id', 'vector', 'poster_url']]
+        cluster_movie_df = cluster_movie_df[['cluster', 'movie_id', 'vector', 'poster_url', 'avg_rate', 'review_count']]
+
+        # 조건 필터링
+        cluster_movie_df = cluster_movie_df[
+            (cluster_movie_df['review_count'] >= 50)
+            & (cluster_movie_df['avg_rate'] >= 8)
+        ]
 
         # 작은 군집 제거
-        clusters = self.movie_vectors['cluster'].value_counts()
-        clusters = clusters[clusters >= 10]
+        clusters = cluster_movie_df['cluster'].value_counts()
+        clusters = clusters[clusters > 25]
         clusters = list(clusters.index)
         cluster_movie_df = cluster_movie_df[cluster_movie_df['cluster'].isin(clusters)]
+
+        '''
+        # 군집 묶기
+        cluster_df = self.cluster_df[self.cluster_df.index.isin(clusters)].copy()
+        X = Normalizer().fit_transform(list(cluster_df['vector']))
+
+        def train_kmeans_model(X, k):
+            model = KMeans(
+                init='k-means++', 
+                n_clusters=k, 
+                max_iter=10000, 
+                tol=1e-12
+            ).fit(X)
+            
+            return model
+
+        kmeans = train_kmeans_model(X, 20)
+        cluster_df.loc[:, 'cluster_set'] = kmeans.labels_
+
+        # 군집셋별로 하나씩 선택
+        clusters = list(cluster_df.groupby('cluster_set').sample(n=1).index)
+        '''
 
         # 군집 중심에 가까운 순으로 정렬
         cluster_movie_df = pd.merge(
@@ -69,6 +108,7 @@ class Rec:
             cluster_rec[cluster] = cluster_movie_df[cluster_movie_df['cluster'] == cluster][['movie_id']][:n].to_dict('records')
         
         self._upload_to_s3(cluster_rec, config['REC']['FRONT_CLUSTER'])
+
 
     def make_genre_rec(self, n):
         genres = self.movies_df['genre'].explode().value_counts()
@@ -98,22 +138,34 @@ class Rec:
         
         self._upload_to_s3(genre_rec, config['REC']['FRONT_GENRE'])
 
+
     def make_actor_rec(self, n):
         movie_ids = list(self.movies_df['movie_id'])
+        movies_df = self.movies_df.set_index('movie_id').sort_index()
+        makers_df = pd.merge(self.makers_df, self.movies_df[['movie_id']], on='movie_id', validate='many_to_one')
+        makers_df = makers_df.set_index(['movie_id', 'maker_id']).sort_index()
         actor_rec = dict()
+
         for movie_id in movie_ids:
             # 출연한 배우들
-            main_actor_ids = self.movies_df[self.movies_df['movie_id'] == movie_id]['main_actor_ids'].to_list()[0]
+            main_actor_ids = movies_df.loc[movie_id]['main_actor_ids']
 
             # 배우별 출연작 데이터
-            actors_df = self.makers_df[self.makers_df['maker_id'].isin(main_actor_ids) & ~self.makers_df['movie_id'].isin([movie_id])].copy()
+            actors_df = makers_df[
+                ~makers_df.index.isin([movie_id], level='movie_id')
+                & makers_df.index.isin(main_actor_ids, level='maker_id')
+            ]
+            actors_df.reset_index(inplace=True)
             
             # 주연배우 기재순 - 사용x
+            '''
             actors_df['maker_id'] = pd.Categorical(
                 actors_df['maker_id'],
                 categories=main_actor_ids,
                 ordered=True
             )
+            '''
+
             # 개봉일순으로 정렬
             actors_df = actors_df.sort_values(by=['release_date'], ascending=[False])
 
@@ -126,22 +178,27 @@ class Rec:
 
         self._upload_to_s3(actor_rec, config['REC']['DETAIL_ACTOR'])
 
+
     def make_director_rec(self, n):
         movie_ids = list(self.movies_df['movie_id'])
+        makers_df = pd.merge(self.makers_df, self.movies_df[['movie_id']], on='movie_id', validate='many_to_one')
+        makers_df = makers_df.set_index(['movie_id', 'maker_id', 'role']).sort_index()
         director_rec = dict()
+
         for movie_id in movie_ids:
             # 감독, 작가
-            directors = self.makers_df[(self.makers_df['movie_id'] == movie_id) & self.makers_df['role'].isin(['director', 'writer'])]['maker_id'].to_list()
+            directors = makers_df[
+                makers_df.index.isin([movie_id], level='movie_id')
+                & makers_df.index.isin(['director', 'writer'], level='role')
+            ].index.get_level_values('maker_id').to_list()
 
             # 감독, 작가별 참여작 데이터
-            directors_df = self.makers_df[self.makers_df['maker_id'].isin(directors) & ~self.makers_df['movie_id'].isin([movie_id])].copy()
+            directors_df = makers_df[
+                ~makers_df.index.isin([movie_id], level='movie_id')
+                & makers_df.index.isin(directors, level='maker_id')
+            ]
+            directors_df.reset_index(inplace=True)
             
-            # 이름 기재순 - 사용x
-            directors_df['maker_id'] = pd.Categorical(
-                directors_df['maker_id'],
-                categories=directors,
-                ordered=True
-            )
             # 개봉일순으로 정렬
             directors_df = directors_df.sort_values(by=['release_date'], ascending=[False])
 
@@ -154,8 +211,15 @@ class Rec:
         
         self._upload_to_s3(director_rec, config['REC']['DETAIL_DIRECTOR'])
 
+
     def make_similar_rec(self, n):
-        similar_rec_df = pd.merge(self.movie_vectors, self.movies_df[['movie_id', 'poster_url']], on='movie_id', sort=False, validate='one_to_one')
+        similar_rec_df = pd.merge(
+            self.movie_vectors, 
+            self.movies_df[self.movies_df['review_count'] >= 30][['movie_id', 'poster_url']], 
+            on='movie_id', 
+            sort=False, 
+            validate='one_to_one'
+        )
         movie_ids = list(self.movie_vectors.index)        
 
         similar_rec = dict()
@@ -172,7 +236,7 @@ class Rec:
                 tmp_df = similar_rec_df[similar_rec_df['cluster'] == cluster]
                 df_li.append(tmp_df)
                 movie_count += len(tmp_df)
-                if movie_count >= n: 
+                if movie_count >= 100: 
                     break
 
             similar_df = pd.concat(df_li)
@@ -194,15 +258,23 @@ class Rec:
         self._upload_to_s3(similar_rec, config['REC']['DETAIL_SIMILAR'])
 
 
+    def _set_n_processes(self, cores):
+        if (not cores) or (cores >= (mp.cpu_count() // 2)):
+            return (mp.cpu_count() // 2) - 1
+        return cores
+
+
     def _load_movies_df(self):
         movies_df = self._load_from_s3(config['AWS']['S3_BUCKET'], config['DATA']['MOVIE_INFO'])
         return movies_df
 
+
     def _load_makers_df(self):
         makers_df = pd.DataFrame(self.db[config['DB']['MAKERS']].find())
-        makers_df = makers_df[makers_df['movie_id'].isin(self.movies_df['movie_id'])]
+        # makers_df = makers_df[makers_df['movie_id'].isin(self.movies_df['movie_id'])]
         makers_df = makers_df.rename(columns={'movie_poster_url': 'poster_url'})
         return makers_df
+
 
     def _load_cluster_df(self):
         with BytesIO() as f:
@@ -211,6 +283,7 @@ class Rec:
             cluster_df = joblib.load(f)
         return cluster_df
 
+
     def _load_movie_vectors(self):
         with BytesIO() as f:
             p = self.s3.download_fileobj(config['AWS']['S3_BUCKET'], config['MODEL']['MOVIE_VECTORS_PATH'], f)
@@ -218,6 +291,7 @@ class Rec:
             movie_vectors = joblib.load(f)
         movie_vectors = movie_vectors[movie_vectors.index.isin(self.movies_df['movie_id'])]
         return movie_vectors
+
 
     def _upload_to_s3(self, rec, s3_path):
         p = pickle.dumps(rec)
@@ -237,6 +311,7 @@ class Rec:
                 time.sleep(1)
                 continue
 
+
     def _load_from_s3(self, bucket, path):
         with BytesIO() as f:
             p = self.s3.download_fileobj(bucket, path, f)
@@ -246,7 +321,7 @@ class Rec:
 
 
 def main():
-    rec = Rec()
+    rec = Rec(cores=args.cores)
     rec.make_newest_rec(n=args.n_newest_rec)
     rec.make_cluster_rec(n=args.n_cluster_rec)
     rec.make_genre_rec(n=args.n_genre_rec)
@@ -257,6 +332,7 @@ def main():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-cores', type=int, default=0, help='how many cores ')
     parser.add_argument('-n_newest_rec', type=int, default=40)
     parser.add_argument('-n_cluster_rec', type=int, default=40)
     parser.add_argument('-n_genre_rec', type=int, default=40)
