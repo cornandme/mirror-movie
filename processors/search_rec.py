@@ -94,11 +94,16 @@ def main():
                     continue
                 for i in range(2, length+1):
                     subword = word[:i]
-                    if dic.get(subword) is None:
-                        dic[subword] = []
-                    dic[subword].append(name)
+                    dic = _update_name_dic(name, subword, dic)
+
         for key in dic.keys():
             dic[key] = get_unique_ordered_list(dic.get(key))
+        return dic
+
+    def _update_name_dic(name, word, dic):
+        if dic.get(word) is None:
+            dic[word] = []
+        dic[word].append(name)
         return dic
 
     def get_unique_ordered_list(li):
