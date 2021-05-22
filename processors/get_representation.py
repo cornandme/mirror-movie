@@ -113,8 +113,11 @@ class ReviewProcessor:
         
         movie_vectors = pd.DataFrame()
         movie_vectors['movie_id'] = self.morphs_df['movie_id']
-        # get averaged document vector
+
+        # get averaged comment vector
         movie_vectors.loc[:, 'vector'] = self.morphs_df['morphs'].map(lambda morphs: np.average([word_vectors[morph] for morph in morphs], axis=0))
+        
+        # get movie vector
         movie_vectors = movie_vectors.groupby('movie_id').sum()
 
         self.movie_vectors = movie_vectors

@@ -71,8 +71,18 @@ class MovieInfoPreprocessor(object):
 
     def add_review_stat(self):
         reviews_stat = self.reviews_df.groupby('movie_id').agg({'rate': ['mean', 'count']})
-        merged = pd.merge(self.movies_df, reviews_stat.rate, left_on='_id', right_index=True, validate='one_to_one')
-        merged = merged.rename(columns={'mean': 'avg_rate', 'count': 'review_count'})
+        merged = pd.merge(
+            self.movies_df, 
+            reviews_stat.rate, 
+            how='left', 
+            left_on='_id', 
+            right_index=True, 
+            validate='one_to_one'
+        )
+        merged = merged.rename(columns={
+            'mean': 'avg_rate', 
+            'count': 'review_count'
+        })
         self.movies_df = merged
         return self
 
