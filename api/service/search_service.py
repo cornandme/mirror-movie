@@ -23,9 +23,11 @@ class SearchService(object):
             movies = self.search_movie_by_vector(keyword)
             result['movies'] = self.get_unique_ordered_list(result['movies'] + movies)[:50]
         
+        '''
         if len(result['similar_words']) < 15:
             keywords = self.get_similar_words_by_vector(keyword)
             result['similar_words'] = self.get_unique_ordered_list(result['similar_words'] + keywords)[:15]
+        '''
 
         # 추천 결과에 제목 붙이기
         movies_df = pd.DataFrame(data={'movie_id': result['movies']})
