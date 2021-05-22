@@ -109,7 +109,7 @@ def main(n_clusters):
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n_clusters', type=int, default=20, help='determine how many clusters are generated')
+    parser.add_argument('-n_clusters', type=int, default=200, help='determine how many clusters are generated')
     args = parser.parse_args()
 
     logging.basicConfig(
