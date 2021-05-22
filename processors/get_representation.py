@@ -60,11 +60,14 @@ class ReviewProcessor:
         morphs = self.morphs_df['morphs']
 
         model = FastText(
-            vector_size=50, 
+            vector_size=300, 
             window=7, 
-            min_count=1,
+            sg=1,
+            negative=5,
+            min_count=2,
             bucket=1500,
-            workers=self.n_processes
+            workers=self.n_processes,
+
         )
 
         model.build_vocab(corpus_iterable=morphs)
@@ -73,7 +76,7 @@ class ReviewProcessor:
             corpus_iterable=morphs, 
             total_examples=len(morphs), 
             total_words=model.corpus_total_words, 
-            epochs=10
+            epochs=50
         )
 
         self.model = model
