@@ -169,7 +169,7 @@ if __name__ == '__main__':
 
     logging.basicConfig(
         format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'./logs/review_process_{datetime.now().date()}.log', 
+        filename=f'./logs/get_representation_{datetime.now().date()}.log', 
         level=logging.DEBUG
     )
     logger = logging.getLogger()
