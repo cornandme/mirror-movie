@@ -41,7 +41,13 @@ def main():
 
     def _load_makers_df():
         makers_df = pd.DataFrame(db[config['DB']['MAKERS']].find())
-        makers_df = makers_df[makers_df['movie_id'].isin(movies_df['movie_id'])]
+        makers_df = pd.merge(makers_df, movies_df[['movie_id', 'review_count']], on='movie_id', validate='many_to_one')
+        roles = ['actor_main', 'director', 'writer', 'actor_sub']
+        makers_df['role'] = pd.Categorical(
+            makers_df['role'],
+            categories=roles,
+            ordered=True
+        )
         makers_df = makers_df.rename(columns={'movie_poster_url': 'poster_url'})
         return makers_df
 
@@ -65,14 +71,20 @@ def main():
     cluster_df = _load_cluster_df()
     movie_vectors = _load_movie_vectors()
 
-    # 개봉일 최신순 정렬
-    movies_df = movies_df.sort_values(by=['release_date'], ascending=False)
-    makers_df = makers_df.sort_values(by=['release_date'], ascending=False)
+    # 리뷰 많은 순 정렬
+    movies_df = movies_df.sort_values(by=['review_count'], ascending=False)
+
+    # 역할, 리뷰 많은 순 정렬
+    makers_df = makers_df.sort_values(by=['role', 'review_count'], ascending=[True, False])
 
     # 부분단어 해시
     def generate_hash(names):
         dic = dict()
         for name in names:
+            if len(name) == 1:
+                dic = _update_name_dic(name, name, dic)
+                continue
+
             name_split = name.split(' ')
             name_split.append(name.replace(' ', ''))
             name_split.append(name)
