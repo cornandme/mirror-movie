@@ -3,7 +3,6 @@ from datetime import datetime
 from datetime import timedelta
 import json
 import logging
-import pickle
 import time
 
 from pymongo import MongoClient
@@ -76,7 +75,7 @@ class MorphExtractor:
         morphs_dict = self.morph_df.to_dict('records')
         try:
             for doc in morphs_dict:
-                tokens.update_one({'_id': doc['_id']}, {'$set': {'morphed': True}}, upsert=True)
+                tokens.update_one({'_id': doc['_id']}, {'$set': {'morphed': True}})
         except Exception as e:
             self.logger.error(e)
         finally:

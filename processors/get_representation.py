@@ -66,8 +66,7 @@ class ReviewProcessor:
             negative=5,
             min_count=2,
             bucket=1500,
-            workers=self.n_processes,
-
+            workers=self.n_processes
         )
 
         model.build_vocab(corpus_iterable=morphs)

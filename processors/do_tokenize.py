@@ -37,7 +37,7 @@ class Tokenizer(object):
         user_reviews = db[config['DB']['USER_REVIEWS']]
 
         try:
-            reviews = user_reviews.find({'tokenized': False})
+            reviews = user_reviews.find({'tokenized': {'$in': [None, False]}})
             if self.rows != 0:
                 reviews = reviews[:self.rows]
         except Exception as e:
@@ -45,8 +45,7 @@ class Tokenizer(object):
         finally:
             client.close()
 
-        df = pd.DataFrame(reviews)
-        df.drop(columns=['rate', 'certificated', 'date', 'tokenized'])
+        df = pd.DataFrame(reviews)[['_id', 'movie_id', 'review']]
         
         self.logger.info(f'got {len(df)} reviews.')
         print(f'got {len(df)} reviews.')
@@ -69,7 +68,7 @@ class Tokenizer(object):
                 print('filtering empty rows')
                 df_job = p.map(self._filter_empty_token_row, df_job)
                 print('dropping columns')
-                func = partial(self._drop_columns, ['review', 'tokenized'])
+                func = partial(self._drop_columns, ['review'])
                 df_job = p.map(func, df_job)
                 print('concatting chunk')
                 tokens_df_chunk = pd.concat(df_job)
@@ -104,7 +103,6 @@ class Tokenizer(object):
 
         self.tokens_df = self.tokens_df[self.tokens_df['tokens'].astype('str') != '[]']
         tokens_li = self.tokens_df.to_dict('records')
-        comment_count = len(tokens_li)
         try:
             for tokens in tokens_li:
                 review_tokens.insert_one(tokens)
@@ -166,7 +164,7 @@ def job_estimater():
     user_reviews = db[config['DB']['USER_REVIEWS']]
 
 
-    row_count = user_reviews.count_documents({'tokenized': False})
+    row_count = user_reviews.count_documents({'tokenized': {'$in': [None, False]}})
     print(f'{row_count} rows are not tokenized.')
 
     if row_count == 0:
