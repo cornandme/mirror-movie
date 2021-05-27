@@ -161,7 +161,28 @@ class UserReviewScraper:
                 comment_queue.update_one({'_id': 1}, {'$set': {'movies': []}})
             except Exception as e:
                 self.logger.error(e)
-        print(f'{len(movie_ids)} from db')
+        print(f'{len(movie_ids)} from queue')
+
+        # db movies collection에서 cold movies 수집
+        now = datetime.now()
+        target_datetime = now - timedelta(days=30)
+        movies = self.db[config['DB']['MOVIES']]
+
+        info_movie_ids = pd.DataFrame(movies.find(
+            {'review_checked_date': {'$not': {'$gte': target_datetime}}}, {'_id': 1, 'review_checked_date': 1}
+        )[:1000])
+        for movie_id in info_movie_ids['_id']:
+            movies.update_one({'_id': movie_id}, {'$set': {'review_checked_date': now}})
+
+        reviews = self.db[config['DB']['USER_REVIEWS']]
+        movie_ids_from_reviews = pd.DataFrame(reviews.find({}, {'_id': 0, 'movie_id': 1})).drop_duplicates()
+
+        target_ids = info_movie_ids[
+            ~info_movie_ids['_id'].isin(movie_ids_from_reviews['movie_id'])
+        ]['_id'].to_list()
+        
+        print(f'{len(target_ids)} from movie_info')
+        movie_ids += target_ids
 
         # 신규 코멘트 목록에서 영화 리스트 받아오기
         path_root = config['SCRAPER']['NAVER_MOVIE_COMMENT_ROOT_PATH']
@@ -196,7 +217,7 @@ class UserReviewScraper:
             # 다음 페이지
             page += 1
             sleep()
-        print(f'{len(new_movie_ids)} movie ids total')
+        print(f'{len(new_movie_ids)} new movie ids from new comments')
         
         # 큐에 id 넣기
         for id in set(movie_ids + new_movie_ids):
