@@ -74,23 +74,23 @@ class KeywordExtractor(object):
         return self
     
 
-    def make_movie_prop_distribution(self, df_floor):
+    def make_movie_prob_distribution(self, df_floor):
         self.morphs_df.loc[:, 'morphs'] = self.morphs_df['morphs'].map(
             lambda x: [word for word in x if self.df_dic.get(word) >= df_floor]
         )
 
-        self.morphs_df.loc[:, 'prop_dist'] = self.morphs_df['morphs'].map(
-            lambda morphs: self._tf_to_prop_dist(self._make_tf_dic(morphs))
+        self.morphs_df.loc[:, 'prob_dist'] = self.morphs_df['morphs'].map(
+            lambda morphs: self._tf_to_prob_dist(self._make_tf_dic(morphs))
         )
 
         self.morphs_df = self.morphs_df.drop(columns=['morphs'])
 
         self.morphs_df = self.morphs_df.groupby(self.morphs_df.index).agg(
-            {'prop_dist': lambda col: self._agg_to_movie(col)}
+            {'prob_dist': lambda col: self._agg_to_movie(col)}
         )
 
         self.morphs_df = pd.DataFrame(
-            data=self.morphs_df['prop_dist'].to_list(),
+            data=self.morphs_df['prob_dist'].to_list(),
             index=self.morphs_df.index
         ).fillna(0)
 
@@ -136,7 +136,7 @@ class KeywordExtractor(object):
         return dic
 
 
-    def _tf_to_prop_dist(self, dic):
+    def _tf_to_prob_dist(self, dic):
         total_freq = sum(dic.values())
         return {key: (item / total_freq) for key, item in dic.items()}
 
@@ -207,7 +207,7 @@ def main():
     keyword_extractor = KeywordExtractor()
     keyword_extractor.get_morphs() \
         .make_df_dic() \
-        .make_movie_prop_distribution(df_floor=args.df_floor) \
+        .make_movie_prob_distribution(df_floor=args.df_floor) \
         .extract_cluster_keywords(keyword_length=args.keyword_length) \
         .tag_keywords() \
         .upload_cluster_rec()
