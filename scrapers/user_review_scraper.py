@@ -362,7 +362,7 @@ if __name__ == '__main__':
         level=logging.DEBUG
     )
     logger = logging.getLogger()
-    stop_time = datetime.now() + timedelta(minutes=+args.minutes)
+    stop_time = datetime.now() + timedelta(minutes=args.minutes)
     logger.info(f'process started. finish at {stop_time}')
     print(f'process started. finish at {stop_time}')
     
