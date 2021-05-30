@@ -6,7 +6,7 @@ import botocore
 from flask import Flask
 from flask_cors import CORS
 
-with open('../config.json') as f:
+with open('../../config.json') as f:
     config = json.load(f)
 
 parser = argparse.ArgumentParser()

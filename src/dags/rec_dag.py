@@ -1,6 +1,7 @@
 from datetime import datetime
 from datetime import timedelta
 import json
+from pathlib import Path
 
 from airflow import DAG
 from airflow.operators.bash import BashOperator
@@ -10,9 +11,8 @@ from airflow_config import airflow_config
 
 root_path = airflow_config['MIRROR-MOVIE']['ROOT_PATH']
 
-with open(f"{root_path}/config.json") as f:
+with open(f"{Path(root_path).parent}/config.json") as f:
     config = json.load(f)
-
 
 
 default_args = {

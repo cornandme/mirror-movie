@@ -188,12 +188,12 @@ if __name__=='__main__':
     if args.root_path:
         os.chdir(f'{args.root_path}/processors')
 
-    with open('../config.json') as f:
+    with open('../../config.json') as f:
         config = json.load(f)
 
     logging.basicConfig(
         format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
+        filename=f'../../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
         level=logging.DEBUG
     )
     logger = logging.getLogger()
