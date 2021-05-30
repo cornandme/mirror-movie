@@ -185,3 +185,6 @@ scrapers/logs/*
 .env
 .env.development
 .env.production
+
+# js
+.eslintcache
