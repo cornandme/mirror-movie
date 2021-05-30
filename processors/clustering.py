@@ -4,6 +4,8 @@ from datetime import timedelta
 from io import BytesIO
 import json
 import logging
+import os
+from pathlib import Path
 import pickle
 import time
 
@@ -14,10 +16,6 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import Normalizer
-
-with open("../config.json") as f:
-    config = json.load(f)
-
 
 
 def main(n_clusters):
@@ -109,12 +107,19 @@ def main(n_clusters):
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
     parser.add_argument('-n_clusters', type=int, default=200, help='determine how many clusters are generated')
     args = parser.parse_args()
 
+    if args.root_path:
+        os.chdir(f'{args.root_path}/processors')
+
+    with open('../config.json') as f:
+        config = json.load(f)
+
     logging.basicConfig(
         format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'./logs/clustering_{datetime.now().date()}.log', 
+        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
         level=logging.DEBUG
     )
     logger = logging.getLogger()

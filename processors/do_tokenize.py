@@ -4,6 +4,8 @@ from datetime import timedelta
 from functools import partial
 import json
 import logging
+import os
+from pathlib import Path
 import multiprocessing as mp
 import time
 
@@ -12,9 +14,6 @@ from pymongo import MongoClient
 import numpy as np
 import pandas as pd
 from konlpy.tag import Komoran
-
-with open('../config.json') as f:
-    config = json.load(f)
 
 
 class Tokenizer(object):
@@ -187,14 +186,21 @@ def main():
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
     parser.add_argument('-test', type=bool, default=0, help='use small data set for test')
     parser.add_argument('-cores', type=int, default=0, help='how many cores ')
     parser.add_argument('-rows', type=int, default=1000000, help='limit rows to process.')
     args = parser.parse_args()
 
+    if args.root_path:
+        os.chdir(f'{args.root_path}/processors')
+
+    with open('../config.json') as f:
+        config = json.load(f)
+
     logging.basicConfig(
         format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'./logs/tokenizer_{datetime.now().date()}.log', 
+        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
         level=logging.DEBUG
     )
     logger = logging.getLogger()

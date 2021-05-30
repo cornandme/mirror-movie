@@ -4,6 +4,8 @@ from datetime import timedelta
 import json
 import logging
 import multiprocessing as mp
+import os
+from pathlib import Path
 import pickle
 import time
 
@@ -14,12 +16,9 @@ from scipy.spatial.distance import cosine
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import Normalizer
 
+import boto3
 from io import BytesIO
 import joblib
-import boto3
-
-with open('../config.json') as f:
-    config = json.load(f)
 
 
 class Rec:
@@ -332,6 +331,7 @@ def main():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
     parser.add_argument('-cores', type=int, default=0, help='how many cores ')
     parser.add_argument('-n_newest_rec', type=int, default=40)
     parser.add_argument('-n_cluster_rec', type=int, default=40)
@@ -341,9 +341,15 @@ if __name__ == '__main__':
     parser.add_argument('-n_similar_rec', type=int, default=30)
     args = parser.parse_args()
 
+    if args.root_path:
+        os.chdir(f'{args.root_path}/processors')
+
+    with open('../config.json') as f:
+        config = json.load(f)
+
     logging.basicConfig(
         format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'./logs/recommender_{datetime.now().date()}.log', 
+        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
         level=logging.DEBUG
     )
     logger = logging.getLogger()

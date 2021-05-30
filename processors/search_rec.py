@@ -1,20 +1,20 @@
+import argparse
 from datetime import datetime
 from datetime import timedelta
 import json
 import logging
-import time
+import os
+from pathlib import Path
 import pickle
+import time
 
 from pymongo import MongoClient
 import numpy as np
 import pandas as pd
 
+import boto3
 from io import BytesIO
 import joblib
-import boto3
-
-with open('../config.json') as f:
-    config = json.load(f)
 
 
 def main():
@@ -200,9 +200,19 @@ def main():
 
 
 if __name__=='__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
+    args = parser.parse_args()
+
+    if args.root_path:
+        os.chdir(f'{args.root_path}/processors')
+
+    with open('../config.json') as f:
+        config = json.load(f)
+
     logging.basicConfig(
         format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'./logs/recommender_{datetime.now().date()}.log', 
+        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
         level=logging.DEBUG
     )
     logger = logging.getLogger()

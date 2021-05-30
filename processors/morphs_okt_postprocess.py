@@ -3,15 +3,14 @@ from datetime import datetime
 from datetime import timedelta
 import json
 import logging
+import os
+from pathlib import Path
 import re
 import time
 
 from pymongo import MongoClient
 
 import pandas as pd
-
-with open('../config.json') as f:
-    config = json.load(f)
 
 
 class MorphPostProcessor(object):
@@ -137,14 +136,21 @@ def main():
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
     parser.add_argument('-pos_chunk', type=int, default=1000000, help='limit rows to process.')
     parser.add_argument('-pos_target', type=str, nargs='+', default='Noun Adjective', help='pos list to extract.')
     parser.add_argument('-all', type=bool, default=False, help='convert adjectives in all documents.')
     args = parser.parse_args()
 
+    if args.root_path:
+        os.chdir(f'{args.root_path}/processors')
+
+    with open('../config.json') as f:
+        config = json.load(f)
+
     logging.basicConfig(
         format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'./logs/morphs_okt_postprocess_{datetime.now().date()}.log', 
+        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
         level=logging.DEBUG
     )
     logger = logging.getLogger()

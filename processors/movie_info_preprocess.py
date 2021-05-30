@@ -1,17 +1,17 @@
+import argparse
 from datetime import datetime
 from datetime import timedelta
 from io import BytesIO
 import json
 import logging
+import os
+from pathlib import Path
 import pickle
 import time
 
 import boto3
 import pandas as pd
 from pymongo import MongoClient
-
-with open('../config.json') as f:
-    config = json.load(f)
 
 
 class MovieInfoPreprocessor(object):
@@ -146,9 +146,20 @@ def main():
 
 
 if __name__=='__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
+    parser.add_argument('-minutes', type=int, default=1440, help='process duration (minutes)')
+    args = parser.parse_args()
+
+    if args.root_path:
+        os.chdir(f'{args.root_path}/processors')
+
+    with open('../config.json') as f:
+        config = json.load(f)
+
     logging.basicConfig(
         format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'./logs/movie_info_preprocess_{datetime.now().date()}.log', 
+        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
         level=logging.DEBUG
     )
     logger = logging.getLogger()
