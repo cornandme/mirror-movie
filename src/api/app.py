@@ -11,7 +11,7 @@ with open('../../config.json') as f:
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-mode', type=str, default='prod')
-args = parser.parse_args()
+args, unknown = parser.parse_known_args()
 
 from model import MovieInfoDAO
 from model import RecDAO
