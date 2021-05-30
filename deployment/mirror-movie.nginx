@@ -4,12 +4,12 @@ server {
   server_name mirrormovie.club www.mirrormovie.club;
 
   location / {
-    root /home/ubuntu/mirror-movie/front/build;
+    root /home/ubuntu/mirror-movie/src/front/build;
     return 301 https://$host$request_uri;
   }
 
   location ~ /.well-known {
-    root /home/ubuntu/mirror-movie/front/build;
+    root /home/ubuntu/mirror-movie/src/front/build;
   }
 }
 
@@ -27,14 +27,14 @@ server {
   add_header Strict-Transport-Security max-age=15768000;
 
   location / {
-    root /home/ubuntu/mirror-movie/front/build;
+    root /home/ubuntu/mirror-movie/src/front/build;
     index index.html;
     try_files $uri $uri/ index.html;
     add_header Cache-Control "no-cache";
   }
 
   location /static {
-    root /home/ubuntu/mirror-movie/front/build;
+    root /home/ubuntu/mirror-movie/src/front/build;
     expires 1y;
     add_header Cache-Control "public";
   }
