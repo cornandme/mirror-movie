@@ -24,8 +24,6 @@ UI와 기능은 [넷플릭스 windows 앱](https://www.microsoft.com/ko-kr/p/net
   1. [Architecture](#Architecture)
   1. [Data Flow](#Data-Flow)
   1. [Model](#Model)
-  1. [Back-end](#Back-end)
-  1. [Front-end](#Front-end)
 
 <br>
 <br>
@@ -89,25 +87,9 @@ UI와 기능은 [넷플릭스 windows 앱](https://www.microsoft.com/ko-kr/p/net
 
 ![](https://user-images.githubusercontent.com/31299614/120148987-0301e880-c224-11eb-995b-7c0558900d6e.png)
 ![](https://user-images.githubusercontent.com/31299614/120148316-fdf06980-c222-11eb-96e2-fb492305e412.png)
-![](https://user-images.githubusercontent.com/31299614/120148324-0052c380-c223-11eb-82d0-634e185a72f5.png)
+![](https://user-images.githubusercontent.com/31299614/120149735-1bbece00-c225-11eb-84a3-4322f9c9ddf7.png)
 
 [목차로 돌아가기](#목차)
 #
 
 <br>
-
-### **Back-end**
-
-todo
-
-[목차로 돌아가기](#목차)
-#
-
-<br>
-
-### **Front-end**
-
-todo
-
-[목차로 돌아가기](#목차)
-#
