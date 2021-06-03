@@ -65,7 +65,7 @@ UI와 기능은 [넷플릭스 windows 앱](https://www.microsoft.com/ko-kr/p/net
 
 * 검색어를 입력하면 적합한 영화 목록을 추천합니다.
 
-![](https://user-images.githubusercontent.com/31299614/120594314-bb759980-c47b-11eb-8eb4-a66277566a8c.gif)
+![](https://user-images.githubusercontent.com/31299614/120595830-f5e03600-c47d-11eb-851d-2ee955832904.gif)
 
 <br>
 
