@@ -33,7 +33,7 @@ class Front extends Component {
     const bannerImgPath = `${process.env.REACT_APP_BANNER_IMG_SOURCE}banner_${this.state.bannerImgNum}.jpg`;
     return (
       <>
-        <Nav 
+        <Nav
           startSearch={this.props.startSearch}
           stopSearch={this.props.stopSearch}
           search={this.props.search}
@@ -45,20 +45,20 @@ class Front extends Component {
           searchStillcutHeight={this.props.searchStillcutHeight}
         />
         <main className={styles.main}>
-          <header 
+          <header
             className={styles.headerBox}
             style={{
               'height': this.props.bannerImageHeight
             }}
           >
-            <img 
+            <img
               className={styles.bannerImage}
-              src={bannerImgPath} 
+              src={bannerImgPath}
               alt="banner"
             />
           </header>
           <div className={styles.movieListBoardBg}>
-            <ul 
+            <ul
               className={styles.movieListBoard}
               style={{
                 top: `${-this.props.movieListBoardMove}px`,

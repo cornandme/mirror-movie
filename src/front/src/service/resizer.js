@@ -45,6 +45,12 @@ class Resizer {
     const searchStillcutHeight = 0.6 * searchStillcutWidth;
     return [searchStillcutWidth, searchStillcutHeight];
   };
+
+  getDetailInfoboxSize = (dimensionX) => {
+    const detailInfoboxWidth = dimensionX < 480 ? dimensionX : 480;
+    const detailStillcutHeight = 0.7 * detailInfoboxWidth;
+    return [detailInfoboxWidth, detailStillcutHeight]
+  }
 }
 
 export default Resizer;

@@ -24,6 +24,8 @@ class App extends PureComponent {
       searching: false,
       searchResult: null,
       lastKeyword: null,
+      detailInfoboxWidth: null,
+      detailStillcutHeight: null
     }
   }
 
@@ -79,16 +81,19 @@ class App extends PureComponent {
     const frontPosterCount = this.props.resizer.getFrontPosterCount(dimensionX);
     const [frontPosterWidth, frontPosterHeight] = this.props.resizer.getFrontPosterSize(dimensionX, frontPosterCount);
     const [searchStillcutWidth, searchStillcutHeight] = this.props.resizer.getSearchStillcutSize(dimensionX);
-    this.setState({ 
-      dimensionX, 
-      dimensionY, 
-      bannerImageHeight, 
+    const [detailInfoboxWidth, detailStillcutHeight] = this.props.resizer.getDetailInfoboxSize(dimensionX);
+    this.setState({
+      dimensionX,
+      dimensionY,
+      bannerImageHeight,
       movieListBoardMove,
-      frontPosterCount, 
-      frontPosterWidth, 
+      frontPosterCount,
+      frontPosterWidth,
       frontPosterHeight,
       searchStillcutWidth,
-      searchStillcutHeight
+      searchStillcutHeight,
+      detailInfoboxWidth,
+      detailStillcutHeight
     });
   }
 
@@ -103,7 +108,7 @@ class App extends PureComponent {
     return (
       <div className={styles.app}>
         <Route exact path="/">
-          <Front 
+          <Front
             dimensionX={this.state.dimensionX}
             dimensionY={this.state.dimensionY}
             bannerImageHeight={this.state.bannerImageHeight}
@@ -124,8 +129,11 @@ class App extends PureComponent {
             search={this.search}
           />
           {this.state.movieData &&
-            <MovieInfo 
+            <MovieInfo
               movieData={this.state.movieData}
+              detailInfoboxWidth={this.state.detailInfoboxWidth}
+              detailStillcutHeight={this.state.detailStillcutHeight}
+              dimensionX={this.state.dimensionX}
               getMovie={this.getMovie}
               stopDetail={this.stopDetail}
             />
