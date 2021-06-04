@@ -98,7 +98,6 @@ class App extends PureComponent {
   }
 
   componentDidMount() {
-    console.log('update checking after mount...');
     this.getfrontData();
     this.handleResize();
     window.addEventListener('resize', this.handleResize);
