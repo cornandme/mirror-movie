@@ -11,10 +11,11 @@ class Movies extends PureComponent {
       leftScrollButtonDisplay: false,
       rightScrollButtonDisplay: false,
       pointer: 0,
-      pointerMax: this.props.movies.length - this.props.posterCount
+      pointerMax: this.props.movies.length - this.props.posterCount,
+      scrollButtonWidth: 0.25 * this.props.posterWidth
     }
   }
-  
+
   onMovieListHover = () => {
     this.determineLeftScrollButtonDisplay();
     this.determineRightScrollButtonDisplay();
@@ -64,20 +65,20 @@ class Movies extends PureComponent {
         <h4 className={styles.topicTitle}>
           {this.props.id && this.props.id}
         </h4>
-        <ul 
+        <ul
           className={styles.movieList}
           onMouseOver={this.onMovieListHover}
           onMouseLeave={this.onMovieListLeave}
         >
-          {this.props.movies && 
+          {this.props.movies &&
             this.props.movies.slice(this.state.pointer, this.state.pointer + this.props.posterCount).map((movie) => {
               const src = `${process.env.REACT_APP_POSTER_SOURCE}${movie.movie_id}.jpg`;
               return (
-                <div 
-                  className={styles.posterContainer} 
+                <div
+                  className={styles.posterContainer}
                   style={{ width: this.props.posterWidth, height: this.props.posterHeight }}
                 >
-                  <Poster 
+                  <Poster
                     key={movie.movie_id}
                     id={movie.movie_id}
                     src={src}
@@ -85,18 +86,20 @@ class Movies extends PureComponent {
                   />
                 </div>
               );
-          })}
+            })}
           {this.state.leftScrollButtonDisplay &&
-            <div 
+            <div
               className={`${styles.scrollButtons} ${styles.leftScrollButton}`}
+              style={{ width: this.state.scrollButtonWidth }}
               onClick={this.onLeftScrollButtonClick}
             >
               <i class="fas fa-chevron-left"></i>
             </div>
           }
           {this.state.rightScrollButtonDisplay &&
-            <div 
+            <div
               className={`${styles.scrollButtons} ${styles.rightScrollButton}`}
+              style={{ width: this.state.scrollButtonWidth }}
               onClick={this.onRightScrollButtonClick}
             >
               <i class="fas fa-chevron-right"></i>
