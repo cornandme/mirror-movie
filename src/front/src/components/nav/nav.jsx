@@ -11,7 +11,7 @@ class Nav extends PureComponent {
   }
 
   handleClickTitle = () => {
-    window.scroll({top: 0});
+    window.scroll({ top: 0 });
   }
 
   handleClickSearch = () => {
@@ -44,9 +44,9 @@ class Nav extends PureComponent {
     if (!this.props.searching) {
       return (
         <nav className={styles.navBar}>
-          <img 
-            className={styles.titleImage} 
-            src="/images/title.png" 
+          <img
+            className={styles.titleImage}
+            src="/images/title.png"
             alt="title"
             onClick={this.handleClickTitle}
           />
@@ -66,19 +66,20 @@ class Nav extends PureComponent {
             <div className={styles.searchIcon}>
               <i class="fas fa-search fa-xs"></i>
             </div>
-            <input 
-              className={styles.searchInput} 
-              type="text" 
-              name="search input" 
+            <input
+              className={styles.searchInput}
+              type="text"
+              name="search input"
               autocomplete="off"
               placeholder="검색"
               autoFocus
               required
+              maxlength="20"
               onChange={this.throttled}
             />
           </div>
         </nav>
-        <SearchResult 
+        <SearchResult
           stopSearch={this.props.stopSearch}
           search={this.props.search}
           getMovie={this.props.getMovie}
