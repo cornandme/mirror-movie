@@ -4,7 +4,7 @@ import { BrowserRouter, Route } from "react-router-dom";
 import styles from "./index.module.css";
 
 import MovieService from "./service/movie_service";
-import Resizer from "./service/resizer";
+import Resizer from "./controller/resizer";
 import App from "./app.jsx";
 
 const movieService = new MovieService();
