@@ -43,7 +43,8 @@ class Resizer {
   };
 
   getFrontPosterCount = () => {
-    this.frontPosterCount = Math.round(Math.log(this.dimensionX) / Math.log(1.3) - 20);
+    const dimensionX = this.isMobile ? 1.5 * this.dimensionX : this.dimensionX;
+    this.frontPosterCount = Math.round(Math.log(dimensionX) / Math.log(1.3) - 20);
     return this.frontPosterCount;
   };
 
@@ -80,11 +81,11 @@ class Resizer {
   };
 
   getDetailInfoboxSize = () => {
-    const detailInfoboxWidth = this.isMobile ? Math.max(0.6 * this.dimensionX, this.minWidth) : Math.max(0.3 * this.dimensionX, this.minWidth);
+    const detailInfoboxWidth = this.isMobile ? Math.max(0.9 * this.dimensionX, this.minWidth) : Math.max(0.3 * this.dimensionX, this.minWidth);
     const detailStillcutHeight = 0.7 * detailInfoboxWidth;
 
-    const posterBorder = this.isMobile ? 200 : 50;
-    const detailPosterWidth = (detailInfoboxWidth - posterBorder) / 2;
+    const posterBorder = 60;
+    const detailPosterWidth = (detailInfoboxWidth - posterBorder) / 3;
     const detailPosterHeight = 1.5 * detailPosterWidth;
 
     return [detailInfoboxWidth, detailStillcutHeight, detailPosterWidth, detailPosterHeight]
