@@ -16,4 +16,5 @@ class MovieInfoDAO(S3Loader):
     def load_movie_info(self):
         self.movie_info = self.load_from_s3(self.config['AWS']['S3_BUCKET'], self.config['DATA']['MOVIE_INFO'])
         self.movie_info = self.movie_info.set_index('movie_id').sort_index()
+        self.movie_info.drop(columns=['poster_url', 'stillcut_url'], inplace=True)
         
