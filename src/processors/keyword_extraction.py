@@ -215,7 +215,7 @@ def main():
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
-    parser.add_argument('-df_floor', type=int, default=10)
+    parser.add_argument('-df_floor', type=int, default=30)
     parser.add_argument('-keyword_length', type=int, default=4)
     args = parser.parse_args()
 
