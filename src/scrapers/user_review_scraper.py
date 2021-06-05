@@ -122,7 +122,7 @@ class UserReviewScraper:
     def insert_reviews_to_db(self):
         for document in self.reviews:
             try:
-                self.db[config['DB']['USER_REVIEWS']].insert_one(document)
+                self.db[config['DB']['USER_REVIEWS']].replace_one({'_id': document['_id']}, document, upsert=True)
                 self.review_count += 1
             except pymongo.errors.DuplicateKeyError as dke:
                 self.logger.warning(dke, document)
