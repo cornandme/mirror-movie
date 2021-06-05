@@ -336,8 +336,8 @@ if __name__ == '__main__':
     parser.add_argument('-n_newest_rec', type=int, default=40)
     parser.add_argument('-n_cluster_rec', type=int, default=40)
     parser.add_argument('-n_genre_rec', type=int, default=40)
-    parser.add_argument('-n_actor_rec', type=int, default=10)
-    parser.add_argument('-n_director_rec', type=int, default=10)
+    parser.add_argument('-n_actor_rec', type=int, default=15)
+    parser.add_argument('-n_director_rec', type=int, default=15)
     parser.add_argument('-n_similar_rec', type=int, default=30)
     args = parser.parse_args()
 
