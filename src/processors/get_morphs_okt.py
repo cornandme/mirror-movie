@@ -66,7 +66,7 @@ class MorphExtractor:
         
         try:
             pos = tokens.find({'morphed': {'$in': [None, False]}})[:self.pos_chunk]
-            pos_df = pd.DataFrame(pos)[['_id', 'movie_id', 'tokens']]
+            pos_df = pd.DataFrame(pos)[['_id', 'movie_id', 'tokens', 'rate']]
         except Exception as e:
             self.logger.error(e)
         finally:

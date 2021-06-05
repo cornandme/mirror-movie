@@ -44,7 +44,7 @@ class Tokenizer(object):
         finally:
             client.close()
 
-        df = pd.DataFrame(reviews)[['_id', 'movie_id', 'review']]
+        df = pd.DataFrame(reviews)[['_id', 'movie_id', 'review', 'rate']]
         
         self.logger.info(f'got {len(df)} reviews.')
         print(f'got {len(df)} reviews.')
