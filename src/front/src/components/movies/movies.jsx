@@ -63,6 +63,7 @@ class Movies extends PureComponent {
     return (
       <section
         className={styles.topicArea}
+        style={{ padding: this.props.resizer.movies.topicAreaPadding }}
       >
         <h4
           className={styles.topicTitle}

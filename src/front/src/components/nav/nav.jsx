@@ -46,6 +46,7 @@ class Nav extends PureComponent {
         <>
           <nav
             className={styles.navBar}
+            style={{ padding: this.props.resizer.nav.navBarPadding }}
           >
             <div
               className={styles.fallBackArrowIcon}
@@ -89,6 +90,7 @@ class Nav extends PureComponent {
     return (
       <nav
         className={styles.navBar}
+        style={{ padding: this.props.resizer.nav.navBarPadding }}
       >
         <img
           className={styles.titleImage}

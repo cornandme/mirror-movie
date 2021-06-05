@@ -12,10 +12,12 @@ class Resizer {
     this.isTablet = isTablet;
 
     this.nav = {
+      navBarPadding: this.isMobile ? '0 1.5rem 0 1.5rem' : '0 2.5rem 0 2.5rem',
       searchInputWidth: this.isMobile ? '40%' : '20rem'
     }
 
     this.movies = {
+      topicAreaPadding: this.isMobile ? '2rem 0.5rem 1rem 1.5rem' : '2rem 1.5rem 1rem 2.5rem',
       topicTitleFontSize: this.isMobile ? '1.2rem' : '1.5rem'
     }
 
@@ -54,7 +56,7 @@ class Resizer {
   };
 
   getFrontPosterSize = () => {
-    const border = 20;
+    const border = this.isMobile ? 20 : 40;
     const posterMargin = 10;
     const room = this.dimensionX - border - this.frontPosterCount * posterMargin;
 
