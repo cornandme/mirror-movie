@@ -2,14 +2,14 @@
 @value customBlack, customWhite, customGrey from './common/colors.css';
 
 * {
-  font-size: 10px;
   color: customWhite;
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-* {
+html {
+  font-size: 10px;
   scroll-behavior: smooth;
 }
 

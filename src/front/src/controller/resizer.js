@@ -1,26 +1,60 @@
+import { isMobileOnly } from 'react-device-detect';
+
 class Resizer {
-  getBannerImageHeight = (dimensionX, dimensionY) => {
-    const bannerImageHeight = 0.7 * dimensionX;
-    return Math.min(dimensionY, bannerImageHeight) - 50;
+  constructor() {
+    this.isMobileOnly = isMobileOnly;
+    this._mobileResize()
+  }
+
+  _mobileResize = () => {
+    if (isMobileOnly) {
+      document.documentElement.style.fontSize = '40px';
+    }
+
+    this.searchResult = {
+      modalBlockFlexDirection: isMobileOnly ? 'column' : 'row',
+      similarWordBlockMarginTop: isMobileOnly ? '7rem' : 0
+    }
+  }
+
+  set dimX(dimX) {
+    this.dimensionX = dimX;
+  }
+
+  set dimY(dimY) {
+    this.dimensionY = dimY;
+  }
+
+  getBannerImageHeight = () => {
+    let bannerImageHeight = 0.7 * this.dimensionX;
+    this.bannerImageHeight = Math.min(this.dimensionY, bannerImageHeight) - 50;
+    return this.bannerImageHeight;
   };
 
-  getMovieListBoardMove = (bannerImageHeight) => {
-    return 0.25 * bannerImageHeight;
+  getMovieListBoardMove = () => {
+    if (!this.bannerImageHeight) {
+      this.getBannerImageHeight();
+    }
+    return 0.25 * this.bannerImageHeight;
   };
 
-  getFrontPosterCount = (dimensionX) => {
-    const frontPosterCount = Math.round(Math.log(dimensionX) / Math.log(1.3) - 20);
-    return frontPosterCount;
+  getFrontPosterCount = () => {
+    const dimensionX = isMobileOnly ? this.dimensionX / 7 : this.dimensionX;
+    this.frontPosterCount = Math.round(Math.log(dimensionX) / Math.log(1.3) - 20);
+    return this.frontPosterCount;
   };
 
-  getFrontPosterSize = (dimensionX, frontPosterCount) => {
-    const room = dimensionX - 50 - frontPosterCount * 10;
-    const frontPosterWidth = room / frontPosterCount;
+  getFrontPosterSize = () => {
+    const border = isMobileOnly ? 200 : 50;
+    const posterMargin = isMobileOnly ? 40 : 10;
+    const room = this.dimensionX - border - this.frontPosterCount * posterMargin;
+    const frontPosterWidth = room / this.frontPosterCount;
     const frontPosterHeight = 1.5 * frontPosterWidth;
     return [frontPosterWidth, frontPosterHeight];
   };
 
-  getSearchStillcutSize = (dimensionX) => {
+  getSearchStillcutSize = () => {
+    const dimensionX = isMobileOnly ? 1.5 * this.dimensionX : this.dimensionX;
     let searchStillcutWidth;
     if (dimensionX <= 875) {
       const room = dimensionX - 40;
@@ -46,10 +80,15 @@ class Resizer {
     return [searchStillcutWidth, searchStillcutHeight];
   };
 
-  getDetailInfoboxSize = (dimensionX) => {
-    const detailInfoboxWidth = dimensionX < 480 ? dimensionX : 480;
+  getDetailInfoboxSize = () => {
+    const detailInfoboxWidth = isMobileOnly ? Math.max(0.6 * this.dimensionX, 480) : Math.max(0.3 * this.dimensionX, 480);
     const detailStillcutHeight = 0.7 * detailInfoboxWidth;
-    return [detailInfoboxWidth, detailStillcutHeight]
+
+    const posterBorder = isMobileOnly ? 200 : 50;
+    const detailPosterWidth = (detailInfoboxWidth - posterBorder) / 2;
+    const detailPosterHeight = 1.5 * detailPosterWidth;
+
+    return [detailInfoboxWidth, detailStillcutHeight, detailPosterWidth, detailPosterHeight]
   }
 }
 

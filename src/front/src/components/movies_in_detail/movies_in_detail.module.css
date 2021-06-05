@@ -6,7 +6,5 @@
 }
 
 .posterContainer {
-  width: 50%;
-  height: 337.5px;
-  padding: 5px;
+  margin: 0.5rem;
 }

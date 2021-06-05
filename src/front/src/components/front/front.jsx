@@ -43,8 +43,11 @@ class Front extends Component {
           lastKeyword={this.props.lastKeyword}
           searchStillcutWidth={this.props.searchStillcutWidth}
           searchStillcutHeight={this.props.searchStillcutHeight}
+          resizer={this.props.resizer}
         />
-        <main className={styles.main}>
+        <main
+          className={styles.main}
+        >
           <header
             className={styles.headerBox}
             style={{
@@ -77,6 +80,7 @@ class Front extends Component {
                       posterCount={this.props.frontPosterCount}
                       posterWidth={this.props.frontPosterWidth}
                       posterHeight={this.props.frontPosterHeight}
+                      resizer={this.props.resizer}
                     />
                   );
                 })

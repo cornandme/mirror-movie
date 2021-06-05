@@ -41,54 +41,67 @@ class Nav extends PureComponent {
   }
 
   render() {
-    if (!this.props.searching) {
+    if (this.props.searching) {
       return (
-        <nav className={styles.navBar}>
-          <img
-            className={styles.titleImage}
-            src="/images/title.png"
-            alt="title"
-            onClick={this.handleClickTitle}
+        <>
+          <nav
+            className={styles.navBar}
+          >
+            <div
+              className={styles.fallBackArrowIcon}
+              onClick={this.handleClickFallbackArrow}
+            >
+              <i class="fas fa-arrow-left fa-xs"></i>
+            </div>
+            <div className={styles.searchBox}>
+              <div
+                className={styles.searchIcon}
+              >
+                <i class="fas fa-search fa-xs"></i>
+              </div>
+              <input
+                className={styles.searchInput}
+                type="text"
+                name="search input"
+                autocomplete="off"
+                placeholder="검색"
+                autoFocus
+                required
+                maxlength="20"
+                onChange={this.throttled}
+              />
+            </div>
+          </nav>
+          <SearchResult
+            stopSearch={this.props.stopSearch}
+            search={this.props.search}
+            getMovie={this.props.getMovie}
+            searchResult={this.props.searchResult}
+            lastKeyword={this.props.lastKeyword}
+            stillcutWidth={this.props.searchStillcutWidth}
+            stillcutHeight={this.props.searchStillcutHeight}
+            resizer={this.props.resizer}
           />
-          <div className={styles.searchIcon} onClick={this.handleClickSearch}>
-            <i class="fas fa-search fa-xs"></i>
-          </div>
-        </nav>
+        </>
       );
     }
     return (
-      <>
-        <nav className={styles.navBar}>
-          <div className={styles.fallBackArrowIcon} onClick={this.handleClickFallbackArrow}>
-            <i class="fas fa-arrow-left fa-xs"></i>
-          </div>
-          <div className={styles.searchBox}>
-            <div className={styles.searchIcon}>
-              <i class="fas fa-search fa-xs"></i>
-            </div>
-            <input
-              className={styles.searchInput}
-              type="text"
-              name="search input"
-              autocomplete="off"
-              placeholder="검색"
-              autoFocus
-              required
-              maxlength="20"
-              onChange={this.throttled}
-            />
-          </div>
-        </nav>
-        <SearchResult
-          stopSearch={this.props.stopSearch}
-          search={this.props.search}
-          getMovie={this.props.getMovie}
-          searchResult={this.props.searchResult}
-          lastKeyword={this.props.lastKeyword}
-          stillcutWidth={this.props.searchStillcutWidth}
-          stillcutHeight={this.props.searchStillcutHeight}
+      <nav
+        className={styles.navBar}
+      >
+        <img
+          className={styles.titleImage}
+          src="/images/title.png"
+          alt="title"
+          onClick={this.handleClickTitle}
         />
-      </>
+        <div
+          className={styles.searchIcon}
+          onClick={this.handleClickSearch}
+        >
+          <i class="fas fa-search fa-xs"></i>
+        </div>
+      </nav>
     );
   }
 }

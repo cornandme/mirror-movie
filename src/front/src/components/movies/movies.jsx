@@ -61,7 +61,9 @@ class Movies extends PureComponent {
 
   render() {
     return (
-      <section className={styles.topicArea}>
+      <section
+        className={styles.topicArea}
+      >
         <h4 className={styles.topicTitle}>
           {this.props.id && this.props.id}
         </h4>
@@ -76,7 +78,10 @@ class Movies extends PureComponent {
               return (
                 <div
                   className={styles.posterContainer}
-                  style={{ width: this.props.posterWidth, height: this.props.posterHeight }}
+                  style={{
+                    width: this.props.posterWidth,
+                    height: this.props.posterHeight
+                  }}
                 >
                   <Poster
                     key={movie.movie_id}

@@ -56,7 +56,7 @@ class MovieInfo extends Component {
               alt={`${this.props.movieData.movie_info[0].movie_id}`}
             />
             <h3 className={styles.movieTitle}>{this.props.movieData.movie_info[0].title_kor}</h3>
-            {this.props.dimensionX > 1080 &&
+            {!this.props.resizer.isMobileOnly &&
               <div
                 className={styles.xbutton}
                 onClick={this.handleClickBackbutton}
@@ -64,7 +64,7 @@ class MovieInfo extends Component {
                 <i class="fas fa-times"></i>
               </div>
             }
-            {this.props.dimensionX <= 1080 &&
+            {this.props.resizer.isMobileOnly &&
               <div
                 className={styles.arrowbutton}
                 onClick={this.handleClickBackbutton}
@@ -104,6 +104,8 @@ class MovieInfo extends Component {
                   key='similar_rec'
                   movies={this.props.movieData.similar_rec.slice(0, 10)}
                   getMovie={this.props.getMovie}
+                  detailPosterWidth={this.props.detailPosterWidth}
+                  detailPosterHeight={this.props.detailPosterHeight}
                 />
               </div>
             }
@@ -114,6 +116,8 @@ class MovieInfo extends Component {
                   key='actor_rec'
                   movies={this.props.movieData.actor_rec}
                   getMovie={this.props.getMovie}
+                  detailPosterWidth={this.props.detailPosterWidth}
+                  detailPosterHeight={this.props.detailPosterHeight}
                 />
               </div>
             }
@@ -124,6 +128,8 @@ class MovieInfo extends Component {
                   key='director_rec'
                   movies={this.props.movieData.director_rec}
                   getMovie={this.props.getMovie}
+                  detailPosterWidth={this.props.detailPosterWidth}
+                  detailPosterHeight={this.props.detailPosterHeight}
                 />
               </div>
             }

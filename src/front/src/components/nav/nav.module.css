@@ -5,13 +5,12 @@
   top: 0;
   z-index: 10;
   width: 100%;
-  height: 50px;
+  height: 5rem;
   background-color: customBlack;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-left: 30px;
-  padding-right: 30px;
+  padding: 0 3rem 0 3rem;
 }
 
 .titleImage {
@@ -29,18 +28,18 @@
 
 .fallBackArrowIcon,
 .searchIcon {
-  width: 30px;
+  width: 3rem;
   height: 100%;
-  font-size: 30px;
+  font-size: 3rem;
 }
 
 .searchInput {
-  width: 200px;
+  width: 20rem;
   height: 50%;
-  font-size: 15px;
-  border: solid 1.5px grey;
-  padding-left: 10px;
-  padding-right: 10px;
+  font-size: 1.5rem;
+  border: solid 0.15rem grey;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
 .input,
