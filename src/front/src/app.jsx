@@ -78,8 +78,11 @@ class App extends PureComponent {
   handleResize = () => {
     const dimensionX = document.body.scrollWidth;
     const dimensionY = window.innerHeight;
-    this.props.resizer.dimensionX = dimensionX;
-    this.props.resizer.dimensionY = dimensionY;
+    const resizer = this.props.resizer;
+    resizer.mobileResize();
+    resizer.dimensionX = dimensionX;
+    resizer.dimensionY = dimensionY;
+
     const bannerImageHeight = this.props.resizer.getBannerImageHeight();
     const movieListBoardMove = this.props.resizer.getMovieListBoardMove();
     const frontPosterCount = this.props.resizer.getFrontPosterCount();
@@ -111,7 +114,10 @@ class App extends PureComponent {
 
   render() {
     return (
-      <div className={styles.app}>
+      <div
+        className={styles.app}
+        style={{ minWidth: this.props.resizer.minWidth }}
+      >
         <Route exact path="/">
           <Front
             dimensionX={this.state.dimensionX}

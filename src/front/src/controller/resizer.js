@@ -3,17 +3,21 @@ import { isMobileOnly } from 'react-device-detect';
 class Resizer {
   constructor() {
     this.isMobileOnly = isMobileOnly;
-    this._mobileResize()
+    this.minWidth = 280;
+    this.mobileResize()
   }
 
-  _mobileResize = () => {
-    if (isMobileOnly) {
-      document.documentElement.style.fontSize = '40px';
+  mobileResize = () => {
+    this.isMobile = isMobileOnly || (this.dimensionX <= 1080);
+
+    this.nav = {
+      searchInputWidth: this.isMobile ? '40%' : '20rem'
     }
 
     this.searchResult = {
-      modalBlockFlexDirection: isMobileOnly ? 'column' : 'row',
-      similarWordBlockMarginTop: isMobileOnly ? '7rem' : 0
+      modalBlockFlexDirection: this.isMobile ? 'column' : 'row',
+      similarWordBlockMarginTop: this.isMobile ? '7rem' : 0,
+      stillcutMovieTitleBottom: this.isMobile ? '2rem' : '3rem'
     }
   }
 
@@ -39,40 +43,35 @@ class Resizer {
   };
 
   getFrontPosterCount = () => {
-    const dimensionX = isMobileOnly ? this.dimensionX / 7 : this.dimensionX;
-    this.frontPosterCount = Math.round(Math.log(dimensionX) / Math.log(1.3) - 20);
+    this.frontPosterCount = Math.round(Math.log(this.dimensionX) / Math.log(1.3) - 20);
     return this.frontPosterCount;
   };
 
   getFrontPosterSize = () => {
-    const border = isMobileOnly ? 200 : 50;
-    const posterMargin = isMobileOnly ? 40 : 10;
+    const border = 50;
+    const posterMargin = 10;
     const room = this.dimensionX - border - this.frontPosterCount * posterMargin;
+
     const frontPosterWidth = room / this.frontPosterCount;
     const frontPosterHeight = 1.5 * frontPosterWidth;
     return [frontPosterWidth, frontPosterHeight];
   };
 
   getSearchStillcutSize = () => {
-    const dimensionX = isMobileOnly ? 1.5 * this.dimensionX : this.dimensionX;
+    const border = this.isMobile ? 40 : 310;
+    const room = this.dimensionX - border;
     let searchStillcutWidth;
-    if (dimensionX <= 875) {
-      const room = dimensionX - 40;
+    if (this.dimensionX <= 875) {
       searchStillcutWidth = room / 2;
-    } else if (dimensionX <= 1080) {
-      const room = dimensionX - 40;
+    } else if (this.dimensionX <= 1080) {
       searchStillcutWidth = room / 3;
-    } else if (dimensionX <= 1548) {
-      const room = dimensionX - 40 - 270;
+    } else if (this.dimensionX <= 1548) {
       searchStillcutWidth = room / 3;
-    } else if (dimensionX <= 1972) {
-      const room = dimensionX - 40 - 270;
+    } else if (this.dimensionX <= 1972) {
       searchStillcutWidth = room / 4;
-    } else if (dimensionX <= 2400) {
-      const room = dimensionX - 40 - 270;
+    } else if (this.dimensionX <= 2400) {
       searchStillcutWidth = room / 5;
     } else {
-      const room = dimensionX - 40 - 270;
       searchStillcutWidth = room / 6;
     }
 
@@ -81,10 +80,10 @@ class Resizer {
   };
 
   getDetailInfoboxSize = () => {
-    const detailInfoboxWidth = isMobileOnly ? Math.max(0.6 * this.dimensionX, 480) : Math.max(0.3 * this.dimensionX, 480);
+    const detailInfoboxWidth = this.isMobile ? Math.max(0.6 * this.dimensionX, this.minWidth) : Math.max(0.3 * this.dimensionX, this.minWidth);
     const detailStillcutHeight = 0.7 * detailInfoboxWidth;
 
-    const posterBorder = isMobileOnly ? 200 : 50;
+    const posterBorder = this.isMobile ? 200 : 50;
     const detailPosterWidth = (detailInfoboxWidth - posterBorder) / 2;
     const detailPosterHeight = 1.5 * detailPosterWidth;
 

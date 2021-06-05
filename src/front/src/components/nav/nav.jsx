@@ -61,6 +61,7 @@ class Nav extends PureComponent {
               </div>
               <input
                 className={styles.searchInput}
+                style={{ width: this.props.resizer.nav.searchInputWidth }}
                 type="text"
                 name="search input"
                 autocomplete="off"

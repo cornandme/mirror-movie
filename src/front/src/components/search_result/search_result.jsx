@@ -53,7 +53,10 @@ class SearchResult extends Component {
               return (
                 <li
                   className={styles.stillcutContainer}
-                  style={{ width: this.props.stillcutWidth, height: this.props.stillcutHeight }}
+                  style={{
+                    width: this.props.stillcutWidth,
+                    height: this.props.stillcutHeight,
+                  }}
                 >
                   <img
                     className={styles.stillcut}
@@ -61,7 +64,10 @@ class SearchResult extends Component {
                     alt={`${movie.movie_id}`}
                     onClick={this.handleClickMovie}
                   />
-                  <span className={styles.stillcutMovieTitle}>{movie.title_kor}</span>
+                  <span
+                    className={styles.stillcutMovieTitle}
+                    style={{ bottom: searchResultResizer.stillcutMovieTitleBottom }}
+                  >{movie.title_kor}</span>
                 </li>
               );
             })}
