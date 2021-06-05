@@ -1,4 +1,4 @@
-import { isMobileOnly } from 'react-device-detect';
+import { isMobileOnly, isTablet } from 'react-device-detect';
 
 class Resizer {
   constructor() {
@@ -9,6 +9,7 @@ class Resizer {
 
   mobileResize = () => {
     this.isMobile = isMobileOnly || (this.dimensionX <= 1080);
+    this.isTablet = isTablet;
 
     this.nav = {
       searchInputWidth: this.isMobile ? '40%' : '20rem'
@@ -85,7 +86,8 @@ class Resizer {
   };
 
   getDetailInfoboxSize = () => {
-    const detailInfoboxWidth = this.isMobile ? Math.max(0.9 * this.dimensionX, this.minWidth) : Math.max(0.3 * this.dimensionX, this.minWidth);
+    const infoBoxRatio = this.isMobile ? 0.9 : this.isTablet ? 0.6 : 0.3;
+    const detailInfoboxWidth = Math.max(infoBoxRatio * this.dimensionX, this.minWidth);
     const detailStillcutHeight = 0.7 * detailInfoboxWidth;
 
     const posterBorder = 60;
