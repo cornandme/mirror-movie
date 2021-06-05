@@ -31,6 +31,43 @@ class App extends PureComponent {
     }
   }
 
+  componentDidMount() {
+    this.getfrontData();
+    this.handleResize();
+    window.addEventListener('resize', this.handleResize);
+  }
+
+  handleResize = () => {
+    const dimensionX = document.body.scrollWidth;
+    const dimensionY = window.innerHeight;
+    const resizer = this.props.resizer;
+    resizer.mobileResize();
+    resizer.dimensionX = dimensionX;
+    resizer.dimensionY = dimensionY;
+
+    const bannerImageHeight = this.props.resizer.getBannerImageHeight();
+    const movieListBoardMove = this.props.resizer.getMovieListBoardMove();
+    const frontPosterCount = this.props.resizer.getFrontPosterCount();
+    const [frontPosterWidth, frontPosterHeight] = this.props.resizer.getFrontPosterSize();
+    const [searchStillcutWidth, searchStillcutHeight] = this.props.resizer.getSearchStillcutSize();
+    const [detailInfoboxWidth, detailStillcutHeight, detailPosterWidth, detailPosterHeight] = this.props.resizer.getDetailInfoboxSize();
+    this.setState({
+      dimensionX,
+      dimensionY,
+      bannerImageHeight,
+      movieListBoardMove,
+      frontPosterCount,
+      frontPosterWidth,
+      frontPosterHeight,
+      searchStillcutWidth,
+      searchStillcutHeight,
+      detailInfoboxWidth,
+      detailStillcutHeight,
+      detailPosterWidth,
+      detailPosterHeight
+    });
+  }
+
   getfrontData = async () => {
     const frontData = await this.props.movieService.getFrontData();
     this.setState({ frontData });
@@ -75,41 +112,8 @@ class App extends PureComponent {
     }
   }
 
-  handleResize = () => {
-    const dimensionX = document.body.scrollWidth;
-    const dimensionY = window.innerHeight;
-    const resizer = this.props.resizer;
-    resizer.mobileResize();
-    resizer.dimensionX = dimensionX;
-    resizer.dimensionY = dimensionY;
-
-    const bannerImageHeight = this.props.resizer.getBannerImageHeight();
-    const movieListBoardMove = this.props.resizer.getMovieListBoardMove();
-    const frontPosterCount = this.props.resizer.getFrontPosterCount();
-    const [frontPosterWidth, frontPosterHeight] = this.props.resizer.getFrontPosterSize();
-    const [searchStillcutWidth, searchStillcutHeight] = this.props.resizer.getSearchStillcutSize();
-    const [detailInfoboxWidth, detailStillcutHeight, detailPosterWidth, detailPosterHeight] = this.props.resizer.getDetailInfoboxSize();
-    this.setState({
-      dimensionX,
-      dimensionY,
-      bannerImageHeight,
-      movieListBoardMove,
-      frontPosterCount,
-      frontPosterWidth,
-      frontPosterHeight,
-      searchStillcutWidth,
-      searchStillcutHeight,
-      detailInfoboxWidth,
-      detailStillcutHeight,
-      detailPosterWidth,
-      detailPosterHeight
-    });
   }
 
-  componentDidMount() {
-    this.getfrontData();
-    this.handleResize();
-    window.addEventListener('resize', this.handleResize);
   }
 
   render() {
