@@ -75,18 +75,22 @@ class App extends PureComponent {
 
   getMovie = async (movie_id) => {
     const movieData = await this.props.movieService.getMovieData(movie_id);
+    this.lockFrontScroll();
     this.setState({ movieData });
   }
 
   stopDetail = () => {
+    this.unlockFrontScroll();
     this.setState({ movieData: null });
   }
 
   startSearch = () => {
+    this.lockFrontScroll();
     this.setState({ searching: true });
   }
 
   stopSearch = () => {
+    this.unlockFrontScroll();
     this.setState({
       searching: false,
       searchResult: null,
@@ -112,9 +116,14 @@ class App extends PureComponent {
     }
   }
 
+  lockFrontScroll = () => {
+    this.props.actionController.lockFrontScroll();
   }
 
+  unlockFrontScroll = () => {
+    this.props.actionController.unlockFrontScroll();
   }
+
 
   render() {
     return (
