@@ -10,7 +10,7 @@ def create_endpoints(app, movie_info_service, rec_service, search_service):
             'front_rec': front_rec
         }
     
-    @app.route('/api/movie/<string:movie_id>', methods=['GET'])
+    @app.route('/api/movies/<string:movie_id>', methods=['GET'])
     def movie(movie_id):
         movie_info = movie_info_service.get_movie_info(movie_id)
         actor_rec = rec_service.get_actor_rec(movie_id)

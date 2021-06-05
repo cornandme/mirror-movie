@@ -18,7 +18,7 @@ class MovieService {
   };
 
   getMovieData = async (movie_id) => {
-    const url = `${this.home}movie/${movie_id}`;
+    const url = `${this.home}movies/${movie_id}`;
     try {
       const res = await fetch(url, {
         method: "GET",
