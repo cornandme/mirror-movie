@@ -1,12 +1,27 @@
 class ActionController {
+  constructor() {
+    this.frontScrollLockX = null;
+    this.frontScrollLockY = null;
+
+    window.addEventListener('scroll', () => {
+      if (this.frontScrollLockX !== null && this.frontScrollLockY !== null) {
+        window.scrollTo({
+          top: this.frontScrollLockY, 
+          left: this.frontScrollLockX, 
+          behavior: 'auto'
+        });
+      }
+    });
+  }
+
   lockFrontScroll = () => {
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${window.scrollY}px`;
+    this.frontScrollLockX = window.scrollX;
+    this.frontScrollLockY = window.scrollY;
   }
 
   unlockFrontScroll = () => {
-    document.body.style.position = '';
-    document.body.style.top = '';
+    this.frontScrollLockX = null;
+    this.frontScrollLockY = null;
   }
 }
 
