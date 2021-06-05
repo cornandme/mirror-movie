@@ -6,6 +6,8 @@ class MovieInfoService(object):
 
     def get_movie_info(self, movie_id):
         movie_info = self.movie_info_dao.movie_info
-        movie_info = movie_info[movie_info['movie_id'] == movie_id]
+        movie_info = movie_info.loc[movie_id]
         movie_info = movie_info.where(pd.notnull(movie_info), None)
-        return movie_info.to_dict('records')
+        movie_info = movie_info.to_dict()
+        movie_info['movie_id'] = movie_id
+        return movie_info

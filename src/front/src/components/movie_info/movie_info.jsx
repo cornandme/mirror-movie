@@ -52,10 +52,10 @@ class MovieInfo extends Component {
           >
             <img
               className={styles.stillcut}
-              src={`${process.env.REACT_APP_STILLCUT_SOURCE}${this.props.movieData.movie_info[0].movie_id}.jpg`}
-              alt={`${this.props.movieData.movie_info[0].movie_id}`}
+              src={`${process.env.REACT_APP_STILLCUT_SOURCE}${this.props.movieData.movie_info.movie_id}.jpg`}
+              alt={`${this.props.movieData.movie_info.movie_id}`}
             />
-            <h3 className={styles.movieTitle}>{this.props.movieData.movie_info[0].title_kor}</h3>
+            <h3 className={styles.movieTitle}>{this.props.movieData.movie_info.title_kor}</h3>
             {!this.props.resizer.isMobileOnly &&
               <div
                 className={styles.xbutton}
@@ -75,25 +75,25 @@ class MovieInfo extends Component {
           </div>
           <div className={styles.infoSection}>
             <span className={styles.info}>
-              {this.props.movieData.movie_info[0].release_year && this.props.movieData.movie_info[0].release_year}
+              {this.props.movieData.movie_info.release_year && this.props.movieData.movie_info.release_year}
             </span>
             <span className={styles.info}>
-              {this.props.movieData.movie_info[0].running_time && this.props.movieData.movie_info[0].running_time}
+              {this.props.movieData.movie_info.running_time && this.props.movieData.movie_info.running_time}
             </span>
             <span className={styles.info}>
-              {this.props.movieData.movie_info[0].story && this.props.movieData.movie_info[0].story}
+              {this.props.movieData.movie_info.story && this.props.movieData.movie_info.story}
             </span>
             <span className={styles.info}>
-              {this.props.movieData.movie_info[0].main_actors &&
-                `출연: ${this.props.movieData.movie_info[0].main_actors.join(", ")}`}
+              {this.props.movieData.movie_info.main_actors &&
+                `출연: ${this.props.movieData.movie_info.main_actors.join(", ")}`}
             </span>
             <span className={styles.info}>
-              {this.props.movieData.movie_info[0].director &&
-                `감독: ${this.props.movieData.movie_info[0].director}`}
+              {this.props.movieData.movie_info.director &&
+                `감독: ${this.props.movieData.movie_info.director}`}
             </span>
             <span className={styles.info}>
-              {this.props.movieData.movie_info[0].writer &&
-                `각본: ${this.props.movieData.movie_info[0].writer}`}
+              {this.props.movieData.movie_info.writer &&
+                `각본: ${this.props.movieData.movie_info.writer}`}
             </span>
           </div>
           <div className={styles.recSection}>

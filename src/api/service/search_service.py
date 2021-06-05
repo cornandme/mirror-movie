@@ -33,8 +33,9 @@ class SearchService(object):
         movies_df = pd.DataFrame(data={'movie_id': result['movies']})
         merged_df = pd.merge(
             movies_df, 
-            self.movie_info_dao.movie_info[['movie_id', 'title_kor']], 
-            on='movie_id',
+            self.movie_info_dao.movie_info[['title_kor']], 
+            left_on='movie_id',
+            right_index=True,
             validate='one_to_one'
         )
         result['movies'] = merged_df[['movie_id', 'title_kor']].to_dict('records')
