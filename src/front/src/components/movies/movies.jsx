@@ -64,7 +64,10 @@ class Movies extends PureComponent {
       <section
         className={styles.topicArea}
       >
-        <h4 className={styles.topicTitle}>
+        <h4
+          className={styles.topicTitle}
+          style={{ fontSize: this.props.resizer.movies.topicTitleFontSize }}
+        >
           {this.props.id && this.props.id}
         </h4>
         <ul

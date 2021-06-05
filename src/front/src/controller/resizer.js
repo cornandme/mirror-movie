@@ -14,6 +14,10 @@ class Resizer {
       searchInputWidth: this.isMobile ? '40%' : '20rem'
     }
 
+    this.movies = {
+      topicTitleFontSize: this.isMobile ? '1.2rem' : '1.5rem'
+    }
+
     this.searchResult = {
       modalBlockFlexDirection: this.isMobile ? 'column' : 'row',
       similarWordBlockMarginTop: this.isMobile ? '7rem' : 0,
@@ -49,7 +53,7 @@ class Resizer {
   };
 
   getFrontPosterSize = () => {
-    const border = 50;
+    const border = 20;
     const posterMargin = 10;
     const room = this.dimensionX - border - this.frontPosterCount * posterMargin;
 
