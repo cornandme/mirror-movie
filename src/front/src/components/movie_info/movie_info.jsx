@@ -102,7 +102,7 @@ class MovieInfo extends Component {
                 <h4 className={styles.recTitle}>유사한 영화</h4>
                 <MoviesInDetail
                   key='similar_rec'
-                  movies={this.props.movieData.similar_rec.slice(0, 10)}
+                  movies={this.props.movieData.similar_rec.slice(0, 15)}
                   getMovie={this.props.getMovie}
                   detailPosterWidth={this.props.detailPosterWidth}
                   detailPosterHeight={this.props.detailPosterHeight}
