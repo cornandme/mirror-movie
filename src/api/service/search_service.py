@@ -106,8 +106,6 @@ class SearchService(object):
 
         # get similar rec
         similar_rec = self.rec_dao.similar_rec.get(movie_id)
-        print(movie_id)
-        print(similar_rec)
 
         return list(map(lambda x: x['movie_id'], similar_rec or []))
         
