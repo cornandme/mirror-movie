@@ -1,13 +1,15 @@
 class ActionController {
   constructor() {
-    this.frontScrollLockX = null;
-    this.frontScrollLockY = null;
+    this.frontScrollLock = {
+      X: null,
+      Y: null
+    }
 
     window.addEventListener('scroll', () => {
-      if (this.frontScrollLockX !== null && this.frontScrollLockY !== null) {
+      if (this.frontScrollLock['X'] !== null && this.frontScrollLock['Y'] !== null) {
         window.scrollTo({
-          top: this.frontScrollLockY, 
-          left: this.frontScrollLockX, 
+          top: this.frontScrollLock['Y'], 
+          left: this.frontScrollLock['X'], 
           behavior: 'auto'
         });
       }
@@ -15,13 +17,13 @@ class ActionController {
   }
 
   lockFrontScroll = () => {
-    this.frontScrollLockX = window.scrollX;
-    this.frontScrollLockY = window.scrollY;
+    this.frontScrollLock['X'] = window.scrollX;
+    this.frontScrollLock['Y'] = window.scrollY;
   }
 
   unlockFrontScroll = () => {
-    this.frontScrollLockX = null;
-    this.frontScrollLockY = null;
+    this.frontScrollLock['X'] = null;
+    this.frontScrollLock['Y'] = null;
   }
 }
 
