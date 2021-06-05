@@ -95,7 +95,7 @@ class MorphPostProcessor(object):
         if adj in self.adj_converter['stopwords']:
             return
         if re.match('.*하다$', adj):
-            return f'{adj[:-2]}한'
+            return self.adj_converter['converter_hada'].get(adj) or f'{adj[:-2]}한'
         return self.adj_converter['converter'].get(adj) or adj
 
     
@@ -109,7 +109,8 @@ class MorphPostProcessor(object):
                 doc = self.adj_df.iloc[idx]
                 morphs.update_one(
                     {'_id': doc['_id']},
-                    {'$set': {
+                    {
+                        '$set': {
                             'adjectives': doc['adjectives'],
                             'adj_converted': True
                         }
