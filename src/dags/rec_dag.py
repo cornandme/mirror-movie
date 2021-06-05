@@ -88,33 +88,39 @@ with DAG(
     )
 
     t8 = BashOperator(
+        task_id='morphs_okt_postprocess',
+        depends_on_past=True,
+        bash_command=f"python3 {root_path}/processors/get_morphs_okt.py -root_path {root_path}",
+    )
+
+    t9 = BashOperator(
         task_id='get_representation',
         depends_on_past=True,
         bash_command=f"python3 {root_path}/processors/get_representation.py -root_path {root_path}",
     )
 
-    t9 = BashOperator(
+    t10 = BashOperator(
         task_id='clustering',
         depends_on_past=True,
         bash_command=f"python3 {root_path}/processors/clustering.py -root_path {root_path}",
     )
 
-    t10 = BashOperator(
+    t11 = BashOperator(
         task_id='recommender',
         depends_on_past=True,
         bash_command=f"python3 {root_path}/processors/recommender.py -root_path {root_path}",
     )
 
-    t11 = BashOperator(
+    t12 = BashOperator(
         task_id='keyword_extraction',
         depends_on_past=True,
         bash_command=f"python3 {root_path}/processors/keyword_extraction.py -root_path {root_path}",
     )
 
-    t12 = BashOperator(
+    t13 = BashOperator(
         task_id='search_rec',
         depends_on_past=True,
         bash_command=f"python3 {root_path}/processors/search_rec.py -root_path {root_path}",
     )
 
-    t1 >> t2 >> t3 >> t4 >> t5 >> t6 >> t7 >> t8 >> t9 >> t10 >> t11 >> t12
+    t1 >> t2 >> t3 >> t4 >> t5 >> t6 >> t7 >> t8 >> t9 >> t10 >> t11 >> t12 >> t13
