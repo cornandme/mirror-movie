@@ -10,7 +10,7 @@ class RecService(object):
         genre_rec = self.rec_dao.genre_rec
 
         # transform
-        newest = [{'최신': newest_rec['newest_rec']}]
+        newest = [{'최근개봉': newest_rec['newest_rec']}]
         cluster = [{key: cluster_rec[key]} for key in cluster_rec.keys()]
         genre = [{key: genre_rec[key]} for key in genre_rec.keys()]
 
