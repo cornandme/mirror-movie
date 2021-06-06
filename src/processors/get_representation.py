@@ -22,9 +22,8 @@ from pymongo import MongoClient
 
 
 class ReviewProcessor:
-    def __init__(self, test):
+    def __init__(self):
         self.logger = logging.getLogger()
-        self.test = test
         self.n_processes = (mp.cpu_count() // 2) - 1
         self.morphs_df = None
         self.model = None
@@ -40,10 +39,7 @@ class ReviewProcessor:
         db = client[config['DB']['DATABASE']]
 
         try:
-            if self.test:
-                morphs = db[config['DB']['USER_REVIEW_MORPHS']].find({'movie_id': {'$in': ['159074', '149777', '191637']}})
-            else:
-                morphs = db[config['DB']['USER_REVIEW_MORPHS']].find()
+            morphs = db[config['DB']['USER_REVIEW_MORPHS']].find()
         except Exception as e:
             self.logger.error(e)
         finally:
@@ -154,7 +150,7 @@ class ReviewProcessor:
 
 
 def main():
-    processor = ReviewProcessor(test=args.test)
+    processor = ReviewProcessor()
     processor.get_morphs()
     processor.build_model()
     processor.make_movie_vectors()
@@ -166,7 +162,6 @@ def main():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
-    parser.add_argument('-test', type=int, default=0, help='use small data set for test')
     args = parser.parse_args()
 
     if args.root_path:
@@ -181,7 +176,6 @@ if __name__ == '__main__':
         level=logging.DEBUG
     )
     logger = logging.getLogger()
-    logger.info(f'test: {args.test}')
     logger.info(f'process started. {datetime.now()}')
     print(f'process started. {datetime.now()}')
     start_time = time.time()
