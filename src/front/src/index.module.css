@@ -9,15 +9,6 @@
   scroll-behavior: smooth;
 }
 
-html {
-  font-size: 10px;
-}
-
-html {
-  height: 100%;
-  overflow-y: scroll;
-}
-
 /* hide scrollbar */
 *::-webkit-scrollbar {
   display: none;
@@ -26,6 +17,20 @@ html {
 * {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
+}
+
+html {
+  font-size: 10px;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+  overflow-y: scroll;
+}
+
+body {
+  width: 100%;
 }
 
 input,
