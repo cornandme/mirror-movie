@@ -61,7 +61,7 @@ class Resizer {
     const posterMargin = 10;
     const room = this.dimensionX - border - this.frontPosterCount * posterMargin;
 
-    const frontPosterWidth = room / this.frontPosterCount;
+    const frontPosterWidth = this.isMobileOrTablet ? room / (this.frontPosterCount - 0.8) : room / this.frontPosterCount;
     const frontPosterHeight = 1.5 * frontPosterWidth;
 
     return [frontPosterWidth, frontPosterHeight];
