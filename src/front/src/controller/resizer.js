@@ -10,6 +10,7 @@ class Resizer {
   mobileResize = () => {
     this.isMobile = isMobileOnly || (this.dimensionX <= 1080);
     this.isTablet = isTablet;
+    this.isMobileOrTablet = this.isMobile || this.isTablet;
 
     this.nav = {
       navBarPadding: this.isMobile ? '0 1.5rem 0 1.5rem' : '0 2.5rem 0 2.5rem',
@@ -62,6 +63,7 @@ class Resizer {
 
     const frontPosterWidth = room / this.frontPosterCount;
     const frontPosterHeight = 1.5 * frontPosterWidth;
+
     return [frontPosterWidth, frontPosterHeight];
   };
 
