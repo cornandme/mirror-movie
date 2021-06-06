@@ -89,60 +89,65 @@ class Movies extends PureComponent {
         >
           {this.props.id && this.props.id}
         </h4>
-        <ul
-          ref={this.movieListRef}
-          className={styles.movieList}
-          style={{ width: this.props.movies.length * (this.props.posterWidth + 10) }}
-          onMouseOver={this.onMovieListHover}
-          onMouseLeave={this.onMovieListLeave}
-        >
-          {this.props.movies &&
-            this.props.movies.map((movie) => {
-              const src = `${process.env.REACT_APP_POSTER_SOURCE}${movie.movie_id}.jpg`;
-              return (
-                <div
-                  className={styles.posterContainer}
-                  style={{
-                    width: this.props.posterWidth,
-                    height: this.props.posterHeight
-                  }}
-                >
-                  <Poster
-                    key={movie.movie_id}
-                    id={movie.movie_id}
-                    src={src}
-                    getMovie={this.props.getMovie}
-                  />
-                </div>
-              );
-            })}
-          {this.state.leftScrollButtonDisplay &&
-            <div
-              ref={this.leftScrollButtonRef}
-              className={`${styles.scrollButtons} ${styles.leftScrollButton}`}
-              style={{
-                width: this.state.scrollButtonWidth,
-                left: this.state.pointer * (this.props.posterWidth + 10)
-              }}
-              onClick={this.onLeftScrollButtonClick}
-            >
-              <i class="fas fa-chevron-left"></i>
-            </div>
-          }
-          {this.state.rightScrollButtonDisplay &&
-            <div
-              ref={this.rightScrollButtonRef}
-              className={`${styles.scrollButtons} ${styles.rightScrollButton}`}
-              style={{
-                width: this.state.scrollButtonWidth,
-                left: (this.state.oneLoop - this.state.scrollButtonWidth) + this.state.pointer * (this.props.posterWidth + 10)
-              }}
-              onClick={this.onRightScrollButtonClick}
-            >
-              <i class="fas fa-chevron-right"></i>
-            </div>
-          }
-        </ul>
+        <div className={styles.carouselContainer}>
+          <ul
+            ref={this.movieListRef}
+            className={styles.movieList}
+            style={{ width: this.props.movies.length * (this.props.posterWidth + 10) }}
+            onMouseOver={this.onMovieListHover}
+            onMouseLeave={this.onMovieListLeave}
+            onTouchStart={this.onTouchStart}
+            onTouchMove={this.onTouchMove}
+            onTouchEnd={this.onTouchEnd}
+          >
+            {this.props.movies &&
+              this.props.movies.map((movie) => {
+                const src = `${process.env.REACT_APP_POSTER_SOURCE}${movie.movie_id}.jpg`;
+                return (
+                  <div
+                    className={styles.posterContainer}
+                    style={{
+                      width: this.props.posterWidth,
+                      height: this.props.posterHeight
+                    }}
+                  >
+                    <Poster
+                      key={movie.movie_id}
+                      id={movie.movie_id}
+                      src={src}
+                      getMovie={this.props.getMovie}
+                    />
+                  </div>
+                );
+              })}
+            {this.state.leftScrollButtonDisplay &&
+              <div
+                ref={this.leftScrollButtonRef}
+                className={`${styles.scrollButtons} ${styles.leftScrollButton}`}
+                style={{
+                  width: this.state.scrollButtonWidth,
+                  left: this.state.pointer * (this.props.posterWidth + 10)
+                }}
+                onClick={this.onLeftScrollButtonClick}
+              >
+                <i class="fas fa-chevron-left"></i>
+              </div>
+            }
+            {this.state.rightScrollButtonDisplay &&
+              <div
+                ref={this.rightScrollButtonRef}
+                className={`${styles.scrollButtons} ${styles.rightScrollButton}`}
+                style={{
+                  width: this.state.scrollButtonWidth,
+                  left: (this.state.oneLoop - this.state.scrollButtonWidth) + this.state.pointer * (this.props.posterWidth + 10)
+                }}
+                onClick={this.onRightScrollButtonClick}
+              >
+                <i class="fas fa-chevron-right"></i>
+              </div>
+            }
+          </ul>
+        </div>
       </section>
     );
   }
