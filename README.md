@@ -7,7 +7,7 @@
 
 유저 코멘트를 학습해 맥락에 어울리는 영화를 추천해 줍니다.
 
-UI와 기능은 [넷플릭스 windows 앱](https://www.microsoft.com/ko-kr/p/netflix/9wzdncrfj3tj?activetab=pivot:overviewtab)을 벤치마킹했고, 데이터는 [네이버 영화](https://movie.naver.com/)에서 수집했습니다.
+UI와 기능은 넷플릭스 [windows 앱](https://www.microsoft.com/ko-kr/p/netflix/9wzdncrfj3tj?activetab=pivot:overviewtab)과 [android 앱](https://play.google.com/store/apps/details?id=com.netflix.mediaclient&hl=ko&gl=US)을 벤치마킹했고, 데이터는 [네이버 영화](https://movie.naver.com/)에서 수집했습니다.
 
 <br>
 <br>
