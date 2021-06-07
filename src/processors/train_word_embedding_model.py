@@ -1,7 +1,6 @@
 import argparse
 from datetime import datetime
 from datetime import timedelta
-from functools import reduce
 from io import BytesIO
 import json
 import logging
@@ -12,24 +11,26 @@ import pickle
 import time
 
 import boto3
+import gensim
 from gensim.models import FastText
 import joblib
 import numpy as np
-from numpy.linalg import norm
 import pandas as pd
 import pymongo
 from pymongo import MongoClient
 
 
-class ReviewProcessor:
-    def __init__(self):
+class WordEmbeddingModel:
+    def __init__(self, all):
         self.logger = logging.getLogger()
+        self.all = all
         self.n_processes = (mp.cpu_count() // 2) - 1
         self.morphs_df = None
         self.model = None
-        self.movie_vectors = None
-        self.clusters = None
 
+        if self.all:
+            self.logger.info('using all sentences')
+            print('using all sentences')
         self.logger.info(f'using {self.n_processes} cores')
         print(f'using {self.n_processes} cores')
 
@@ -39,7 +40,10 @@ class ReviewProcessor:
         db = client[config['DB']['DATABASE']]
 
         try:
-            morphs = db[config['DB']['USER_REVIEW_MORPHS']].find()
+            if self.all:
+                morphs = db[config['DB']['USER_REVIEW_MORPHS']].find()
+            else:
+                morphs = db[config['DB']['USER_REVIEW_MORPHS']].find({'fasttext_trained': {'$in': [None, False]}})
         except Exception as e:
             self.logger.error(e)
         finally:
@@ -48,73 +52,76 @@ class ReviewProcessor:
         df = pd.DataFrame(morphs)
         self.logger.info(f'got {len(df)} reviews.')
         print(f'got {len(df)} reviews.')
+
+        self.document_updated = len(df) > 0
         self.morphs_df = df
 
 
+    def load_trained_model(self):
+        if self.all:
+            return
+
+        try:
+            model = self._load_from_s3(config['AWS']['S3_BUCKET'], config['MODEL']['MODEL_PATH'])
+        except Exception:
+            model = None
+        
+        if self._validate_model(model):
+            self.model = model
+
+
+    def _validate_model(self, model):
+        return type(model) == gensim.models.fasttext.FastText
+
+
     def build_model(self):
-        morphs = self.morphs_df['morphs']
+        sentences = self.morphs_df['morphs']
+        if len(sentences) == 0:
+            return
+        model = self.model
 
-        model = FastText(
-            vector_size=300, 
-            window=7, 
-            sg=1,
-            negative=5,
-            min_count=2,
-            bucket=1500,
-            workers=self.n_processes
-        )
+        if not model:
+            model = FastText(
+                vector_size=300, 
+                window=7, 
+                sg=1,
+                negative=5,
+                min_count=2,
+                bucket=1500,
+                workers=self.n_processes
+            )
 
-        model.build_vocab(corpus_iterable=morphs)
+            model.build_vocab(corpus_iterable=sentences)
+
+        else:
+            model.build_vocab(
+                corpus_iterable=sentences,
+                update=True
+            )
 
         model.train(
-            corpus_iterable=morphs, 
-            total_examples=len(morphs), 
-            total_words=model.corpus_total_words, 
-            epochs=50
+            corpus_iterable=sentences, 
+            total_examples=len(sentences), 
+            epochs=1
         )
 
         self.model = model
+        print('train model finished')
 
 
-    def save_model(self):
-        s3 = boto3.client(
-            's3',
-            aws_access_key_id=config["AWS"]["AWS_ACCESS_KEY"],
-            aws_secret_access_key=config["AWS"]["AWS_SECRET_KEY"]
-        )
+    def label_morphs_collection(self):
+        client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
+        db = client[config['DB']['DATABASE']]
+        morphs = db[config['DB']['USER_REVIEW_MORPHS']]
 
-        trial = 0
-        while True:
-            try:
-                with BytesIO() as f:
-                    joblib.dump(self.model, f)
-                    f.seek(0)
-                    s3.upload_fileobj(f, config['AWS']['S3_BUCKET'], config['MODEL']['MODEL_PATH'])
-                return
-            except Exception as e:
-                trial += 1
-                self.logger.error(f'[trial {trial}]{e}')
-                if trial > 2:
-                    self.logger.critical('failed to save model!!')
-                    break
-                time.sleep(1)
-                continue
-
-
-    def make_movie_vectors(self):
-
-        word_vectors = self.model.wv
+        try:
+            for idx in range(len(self.morphs_df)):
+                row = self.morphs_df.iloc[idx]
+                morphs.update_one({'_id': row['_id']}, {'$set': {'fasttext_trained': True}})
+        except Exception as e:
+            self.logger.error(e)
         
-        movie_vectors = pd.DataFrame()
-        movie_vectors['movie_id'] = self.morphs_df['movie_id']
-
-        # get averaged comment vector
-        movie_vectors.loc[:, 'vector'] = self.morphs_df['morphs'].map(lambda morphs: np.average([word_vectors[morph] for morph in morphs], axis=0))
-        
-        # get movie vector
-        movie_vectors = movie_vectors.groupby('movie_id').sum()
-
-        self.movie_vectors = movie_vectors
+        print('label finished')
 
 
     def save_file(self, file, path):
@@ -146,22 +153,40 @@ class ReviewProcessor:
                     self.logger.error('failed to upload files!!')
                     break
                 time.sleep(1)
-                continue
+                continue          
+
+
+    def _load_from_s3(self, bucket, path):
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=config['AWS']['AWS_ACCESS_KEY'],
+            aws_secret_access_key=config['AWS']['AWS_SECRET_KEY']
+        )
+
+        with BytesIO() as f:
+            p = s3.download_fileobj(bucket, path, f)
+            f.seek(0)
+            data = joblib.load(f)
+        return data
 
 
 def main():
-    processor = ReviewProcessor()
+    processor = WordEmbeddingModel(args.all)
     processor.get_morphs()
+    if not processor.document_updated:
+        print('No document updated. Stop process.')
+        return
+    processor.load_trained_model()
     processor.build_model()
-    processor.make_movie_vectors()
     processor.upload_file_to_s3(processor.model, config['MODEL']['MODEL_PATH'])
     processor.save_file(processor.model, config['PROCESS']['MODEL_PATH'])
-    processor.save_file(processor.movie_vectors, config['PROCESS']['MOVIE_VECTORS_PATH'])
+    processor.label_morphs_collection()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
+    parser.add_argument('-all', type=bool, default=False, help='reset model and train new model with full sentences.')
     args = parser.parse_args()
 
     if args.root_path:
