@@ -241,7 +241,7 @@ class MovieScraper:
             pass
 
         try:
-            self.db[config['DB']['COMMENT_QUEUE']].update_one({}, {'$push': {'movies': {'$each': self.movie['_id']}}})
+            self.db[config['DB']['COMMENT_QUEUE']].update_one({}, {'$push': {'movies': self.movie['_id']}})
         except Exception as e:
             self.logger.error(e)
 
