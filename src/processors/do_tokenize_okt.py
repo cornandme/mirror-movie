@@ -95,7 +95,7 @@ class Tokenizer(object):
             else:
                 for tokens in tokens_li:
                     if tokens['tokens'] != []:
-                        review_tokens.insert_one(tokens)
+                        review_tokens.replace_one({'_id': tokens['_id']}, tokens, upsert=True)
                     user_reviews.update_one({'_id': tokens['_id']}, {'$set': {'tokenized_okt': True}})
                 self.logger.info(f'{len(tokens_li)} comments are tokenized.')
                 print(f'{len(tokens_li)} comments are tokenized.')

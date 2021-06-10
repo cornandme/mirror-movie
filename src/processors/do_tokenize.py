@@ -104,7 +104,7 @@ class Tokenizer(object):
         tokens_li = self.tokens_df.to_dict('records')
         try:
             for tokens in tokens_li:
-                review_tokens.insert_one(tokens)
+                review_tokens.replace_one({'_id': tokens['_id']}, tokens, upsert=True)
             self.logger.info(f'{len(tokens_li)} comments are tokenized.')
             print(f'{len(tokens_li)} comments are tokenized.')
         except Exception as e:

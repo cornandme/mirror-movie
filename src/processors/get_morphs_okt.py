@@ -98,7 +98,7 @@ class MorphExtractor:
             for doc in morphs_dict:
                 for adj in doc['adjectives']:
                     okt_adjective_stat.update_one({'_id': adj}, {'$set': {'_id': adj}, '$inc': {'count': 1}}, upsert=True)
-                morphs.insert_one(doc)
+                morphs.replace_one({'_id': doc['_id']}, doc, upsert=True)
                 tokens.update_one({'_id': doc['_id']}, {'$set': {'morphed': True}})
             self.logger.info(f'{comment_count} comments are morphed.')
             print(f'{comment_count} comments are morphed.')

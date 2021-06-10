@@ -84,7 +84,7 @@ class MorphExtractor:
         comment_count = len(morphs_dict)
         try:
             for doc in morphs_dict:
-                morphs.insert_one(doc)
+                morphs.replace_one({'_id': doc['_id']}, doc, upsert=True)
             self.logger.info(f'{comment_count} comments are morphed.')
             print(f'{comment_count} comments are morphed.')
         except Exception as e:
