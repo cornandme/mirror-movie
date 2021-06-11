@@ -8,6 +8,7 @@ import multiprocessing as mp
 import os
 from pathlib import Path
 import pickle
+from queue import Queue
 import time
 
 import boto3
@@ -21,47 +22,71 @@ from pymongo import MongoClient
 
 
 class MovieVectorProcessor:
-    def __init__(self):
+    def __init__(self, chunk):
         self.logger = logging.getLogger()
+        self.chunk = chunk
         self.n_processes = (mp.cpu_count() // 2) - 1
-        self.morphs_df = None
+        self.movie_id_q = Queue()
         self.model = None
+        self.movie_vector_li = []
+        self.morphs_df = None
         self.movie_vectors = None
+
+        self._get_movie_ids()
+        self._load_trained_model()
 
         self.logger.info(f'using {self.n_processes} cores')
         print(f'using {self.n_processes} cores')
 
-
-    def get_morphs(self):
+    
+    def _get_movie_ids(self):
         client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
         db = client[config['DB']['DATABASE']]
+        morphs = db[config['DB']['USER_REVIEW_MORPHS']]
 
-        try:
-            morphs = db[config['DB']['USER_REVIEW_MORPHS']].find()
-        except Exception as e:
-            self.logger.error(e)
-        finally:
-            client.close()
-        
-        df = pd.DataFrame(morphs)
-        self.logger.info(f'got {len(df)} reviews.')
-        print(f'got {len(df)} reviews.')
+        movie_ids = morphs.distinct('movie_id')
 
-        self.morphs_df = df
+        for movie_id in movie_ids:
+            self.movie_id_q.put(movie_id)
 
 
-    def load_trained_model(self):
+    def _load_trained_model(self):
         try:
             model = self._load_from_s3(config['AWS']['S3_BUCKET'], config['MODEL']['MODEL_PATH'])
         except Exception:
             model = None
         
-        if self._validate_model(model):
+        if self.__validate_model(model):
             self.model = model
 
 
-    def _validate_model(self, model):
+    def __validate_model(self, model):
         return type(model) == gensim.models.fasttext.FastText
+
+
+    def get_morphs(self):
+        client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
+        db = client[config['DB']['DATABASE']]
+        morphs = db[config['DB']['USER_REVIEW_MORPHS']]
+
+        docu_count = 0
+        df_li = []
+        while (not self.movie_id_q.empty() and (docu_count < self.chunk)):
+            movie_id = self.movie_id_q.get()
+            try:
+                morphs_df = pd.DataFrame(morphs.find({'movie_id': movie_id}, {'_id': 0, 'movie_id': 1, 'morphs': 1}))
+                df_li.append(morphs_df)
+                docu_count += len(morphs_df)
+            except Exception as e:
+                self.logger.error(e)
+                client.close()
+                
+        client.close()
+        
+        self.logger.info(f'got {docu_count} reviews.')
+        print(f'got {docu_count} reviews.')
+
+        self.morphs_df = pd.concat(df_li)
 
 
     def make_movie_vectors(self):
@@ -77,8 +102,12 @@ class MovieVectorProcessor:
         # get movie vector
         movie_vectors = movie_vectors.groupby('movie_id').sum()
 
-        self.movie_vectors = movie_vectors
+        self.movie_vector_li.append(movie_vectors)
         print('make movie vectors finished')
+
+    
+    def concat_vectors(self):
+        self.movie_vectors = pd.concat(self.movie_vector_li)
 
 
     def save_file(self, file, path):
@@ -128,16 +157,18 @@ class MovieVectorProcessor:
 
 
 def main():
-    processor = MovieVectorProcessor()
-    processor.get_morphs()
-    processor.load_trained_model()
-    processor.make_movie_vectors()
+    processor = MovieVectorProcessor(chunk=args.chunk)
+    while not processor.movie_id_q.empty():
+        processor.get_morphs()
+        processor.make_movie_vectors()
+    processor.concat_vectors()
     processor.save_file(processor.movie_vectors, config['PROCESS']['MOVIE_VECTORS_PATH'])
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
+    parser.add_argument('-chunk', type=int, default=1000000, help='limit rows to process.')
     args = parser.parse_args()
 
     if args.root_path:
