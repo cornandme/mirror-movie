@@ -8,6 +8,7 @@ from pathlib import Path
 import queue
 import random
 import re
+import sys
 import time
 from urllib.error import HTTPError
 from urllib.error import URLError
@@ -425,14 +426,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.root_path:
-        os.chdir(f'{args.root_path}/scrapers')
+        os.chdir(f'{args.root_path}')
+    sys.path[0] = os.getcwd()
 
-    with open('../../config.json') as f:
+    with open('../config.json') as f:
         config = json.load(f)
 
     logging.basicConfig(
         format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'../../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
+        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
         level=logging.DEBUG
     )
     logger = logging.getLogger()
