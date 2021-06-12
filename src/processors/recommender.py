@@ -7,6 +7,7 @@ import multiprocessing as mp
 import os
 from pathlib import Path
 import pickle
+import sys
 import time
 
 from pymongo import MongoClient
@@ -342,14 +343,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.root_path:
-        os.chdir(f'{args.root_path}/processors')
+        os.chdir(f'{args.root_path}')
+    sys.path[0] = os.getcwd()
 
-    with open('../../config.json') as f:
+    with open('../config.json') as f:
         config = json.load(f)
 
     logging.basicConfig(
         format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'../../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
+        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
         level=logging.DEBUG
     )
     logger = logging.getLogger()
