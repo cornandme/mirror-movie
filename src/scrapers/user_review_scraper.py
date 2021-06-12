@@ -17,17 +17,30 @@ from urllib.error import URLError
 from bs4 import BeautifulSoup
 import requests
 import pandas as pd
-
-import boto3
 import pymongo
-from pymongo import MongoClient
+
+def set_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
+    parser.add_argument('-minutes', type=int, default=1440, help='process duration (minutes)')
+    return parser.parse_args()
+
+args = set_args()
+
+if args.root_path:
+    os.chdir(f'{args.root_path}')
+sys.path[0] = os.getcwd()
+
+from common._mongodb_connector import MongoConnector
+from common._logger import get_logger
+
+with open('../config.json') as f:
+    config = json.load(f)
 
 
 class UserReviewScraper:
     def __init__(self):
-        self.logger = logging.getLogger()
-        self.client = MongoClient(config["DB"]["DB_URL"], config["DB"]["DB_PORT"])
-        self.db = self.client[config["DB"]["DATABASE"]]
+        self.mongo_conn = MongoConnector()
         self.session = requests.Session()
         self.headers = config["SCRAPER"]["HEADERS"]
         self.update_checker = self._set_update_checker()
@@ -85,7 +98,7 @@ class UserReviewScraper:
                 self.valid = False
                 return
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
             self.valid = False
             return
 
@@ -98,7 +111,7 @@ class UserReviewScraper:
                 self.valid = False
                 return
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
             self.valid = False
             return
         
@@ -106,7 +119,7 @@ class UserReviewScraper:
             rate_count = int(soup.find('strong', {'class': 'total'}).find('em').get_text(strip=True).replace(',', ''))
             self.pages = math.ceil(rate_count / 10)
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
             self.valid = False
             return
 
@@ -123,12 +136,12 @@ class UserReviewScraper:
     def insert_reviews_to_db(self):
         for document in self.reviews:
             try:
-                self.db[config['DB']['USER_REVIEWS']].replace_one({'_id': document['_id']}, document, upsert=True)
+                self.mongo_conn.user_reviews.replace_one({'_id': document['_id']}, document, upsert=True)
                 self.review_count += 1
             except pymongo.errors.DuplicateKeyError as dke:
-                self.logger.warning(dke, document)
+                logger.warning(dke, document)
             except Exception as e:
-                self.logger.error(e)
+                logger.error(e)
             finally:
                 pass
 
@@ -144,14 +157,11 @@ class UserReviewScraper:
         self.reviews = []
         self.valid = True
 
-    def close_connection(self):
-        self.client.close()
-
     def _set_queue(self):
         q = queue.Queue()
 
         # db 큐 목록 넘겨받기
-        comment_queue = self.db[config['DB']['COMMENT_QUEUE']]
+        comment_queue = self.mongo_conn.comment_queue
         movie_ids = []
         if comment_queue.count_documents({}) == 0 or len(comment_queue.find_one()['movies']) == 0:
             pass
@@ -160,13 +170,13 @@ class UserReviewScraper:
                 movie_ids = [movie_id for movie_id in comment_queue.find_one()['movies']]
                 comment_queue.update_one({'_id': 1}, {'$set': {'movies': []}})
             except Exception as e:
-                self.logger.error(e)
+                logger.error(e)
         print(f'{len(movie_ids)} from queue')
 
         # db movies collection에서 cold movies 수집
         now = datetime.now()
         target_datetime = now - timedelta(days=30)
-        movies = self.db[config['DB']['MOVIES']]
+        movies = self.mongo_conn.movies
 
         info_movie_ids = pd.DataFrame(movies.find(
             {'review_checked_date': {'$not': {'$gte': target_datetime}}}, {'_id': 1, 'review_checked_date': 1}
@@ -174,7 +184,7 @@ class UserReviewScraper:
         for movie_id in info_movie_ids['_id']:
             movies.update_one({'_id': movie_id}, {'$set': {'review_checked_date': now}})
 
-        reviews = self.db[config['DB']['USER_REVIEWS']]
+        reviews = self.mongo_conn.user_reviews
         movie_ids_from_reviews = pd.DataFrame(reviews.find({}, {'_id': 0, 'movie_id': 1})).drop_duplicates()
 
         target_ids = info_movie_ids[
@@ -227,7 +237,7 @@ class UserReviewScraper:
 
 
     def _set_update_checker(self):
-        reviews = self.db[config['DB']['USER_REVIEWS']]
+        reviews = self.mongo_conn.user_reviews
         update_checker = pd.DataFrame(reviews.find({}, {'_id': 0, 'movie_id': 1, 'date': 1})) \
                             .groupby('movie_id').max()
         return update_checker
@@ -238,9 +248,9 @@ class UserReviewScraper:
         try:
             html = self.session.get(path, headers=self.headers, timeout=30).text
         except HTTPError as e:
-            self.logger.error(e)
+            logger.error(e)
         except URLError as e:
-            self.logger.error(e)
+            logger.error(e)
         return html
 
     def _scrape_reviews(self, soup):
@@ -251,10 +261,10 @@ class UserReviewScraper:
                 date = tag.find('div', {'class': 'score_reple'}).find('dt').find_all('em')[-1].get_text(strip=True).replace('.', '').replace(' ', '').replace(':', '')
                 if self.last_update_date is not None and date < self.last_update_date:
                     self.valid = False
-                    self.logger.info(f'scraped all new documents after {self.last_update_date}')
+                    logger.info(f'scraped all new documents after {self.last_update_date}')
                     break
             except Exception as e:
-                self.logger.error(e)
+                logger.error(e)
                 continue
 
             # review
@@ -265,7 +275,7 @@ class UserReviewScraper:
                 else:
                     review = review_tag.get_text(strip=True)
             except Exception as e:
-                self.logger.error(e)
+                logger.error(e)
                 continue
             
             # certificated
@@ -273,14 +283,14 @@ class UserReviewScraper:
                 certificate_tag = tag.find('div', {'class': 'score_reple'}).find('span', {'class': 'ico_viewer'})
                 certificated = True if certificate_tag != None and certificate_tag.get_text(strip=True) == '관람객' else False
             except Exception as e:
-                self.logger.error(e)
+                logger.error(e)
                 pass
             
             # rate
             try:
                 rate = int(tag.find('div', {'class': 'star_score'}).find('em').get_text(strip=True))
             except Exception as e:
-                self.logger.error(e)
+                logger.error(e)
                 pass
 
             # user_id
@@ -292,7 +302,7 @@ class UserReviewScraper:
                 else:
                     user_id = user_id_span[:4]
             except Exception as e:
-                self.logger.error(e)
+                logger.error(e)
                 continue
             
             docu = {
@@ -310,6 +320,7 @@ def sleep():
     return time.sleep(config['SCRAPER']['REVIEW_SLEEP_INTERVAL'] - random.random() * 0.2)
 
 def main():
+    scraper = UserReviewScraper()
     movie_count = 0
     review_count = 0
     
@@ -347,35 +358,17 @@ def main():
         movie_count += 1
         scraper.reset_status()
     
-    scraper.close_connection()
+    scraper.mongo_conn.close()
     return movie_count, review_count
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
-    parser.add_argument('-minutes', type=int, default=1440, help='process duration (minutes)')
-    args = parser.parse_args()
-
-    if args.root_path:
-        os.chdir(f'{args.root_path}')
-    sys.path[0] = os.getcwd()
-
-    with open('../config.json') as f:
-        config = json.load(f)
-
-    logging.basicConfig(
-        format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
-        level=logging.DEBUG
-    )
-    logger = logging.getLogger()
+    logger = get_logger(filename=Path(__file__).stem)
     stop_time = datetime.now() + timedelta(minutes=args.minutes)
     logger.info(f'process started. finish at {stop_time}')
     print(f'process started. finish at {stop_time}')
     
     start_time = time.time()
-    scraper = UserReviewScraper()
 
     # main
     movie_count, review_count = main()

@@ -3,50 +3,85 @@ from datetime import datetime
 from datetime import timedelta
 from functools import partial
 import json
-import logging
 import multiprocessing as mp
 import os
 from pathlib import Path
 import sys
 import time
 
-from pymongo import MongoClient
 import numpy as np
 import pandas as pd
 from konlpy.tag import Okt
 
+def set_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
+    parser.add_argument('-cores', type=int, default=0, help='how many cores ')
+    parser.add_argument('-rows', type=int, default=1000000, help='limit rows to process.')
+    return parser.parse_args()
+
+args = set_args()
+
+if args.root_path:
+    os.chdir(f'{args.root_path}')
+sys.path[0] = os.getcwd()
+
+from common._mongodb_connector import MongoConnector
+from common._logger import get_logger
+
+with open('../config.json') as f:
+    config = json.load(f)
+
+
+
+def _add_tokens(df):
+    okt = Okt()
+    df['tokens'] = df['review'].map(lambda x: _get_tokens(okt, x))
+    return df
+
+
+def _get_tokens(okt, string):
+    try:
+        result = okt.pos(string, norm=True, stem=True)
+        result = [token for token in result if len(token) == 2]
+        return result
+    except:
+        return []
+
+
+def _filter_empty_token_row(df):
+    return df[df['tokens'].astype('str') != '[]']
+
+
+def _drop_columns(columns, df):
+    return df.drop(columns=columns)
+
 
 class Tokenizer(object):
-    def __init__(self, test, cores, rows):
-        self.logger = logging.getLogger()
-        self.test = test
+    def __init__(self, cores, rows):
+        self.mongo_conn = MongoConnector()
         self.n_processes = self._set_n_processes(cores)
         self.rows = rows
 
-        if test:
-            self.logger.info('*** test ***')
-            print('*** test ***')
-        self.logger.info(f'using {self.n_processes} cores')
+        logger.info(f'using {self.n_processes} cores')
         print(f'using {self.n_processes} cores')
 
 
     def get_reviews(self):
-        client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
-        db = client[config['DB']['DATABASE']]
-        user_reviews = db[config['DB']['USER_REVIEWS']]
+        user_reviews = self.mongo_conn.user_reviews
 
         try:
             reviews = user_reviews.find({'tokenized_okt': {'$in': [None, False]}})
             if self.rows != 0:
                 reviews = reviews[:self.rows]
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
         finally:
-            client.close()
+            self.mongo_conn.close()
 
         df = pd.DataFrame(reviews)[['_id', 'movie_id', 'review', 'rate']]
         
-        self.logger.info(f'got {len(df)} reviews.')
+        logger.info(f'got {len(df)} reviews.')
         print(f'got {len(df)} reviews.')
 
         self._split_df(df)
@@ -63,11 +98,11 @@ class Tokenizer(object):
                 print(f'chunk {idx}: size {len(chunk)}')
                 df_job = np.array_split(chunk, self.n_processes)
                 print('getting tokens')
-                df_job = p.map(self._add_tokens, df_job)
+                df_job = p.map(_add_tokens, df_job)
                 print('filtering empty rows')
-                df_job = p.map(self._filter_empty_token_row, df_job)
+                df_job = p.map(_filter_empty_token_row, df_job)
                 print('dropping columns')
-                func = partial(self._drop_columns, ['review'])
+                func = partial(_drop_columns, ['review'])
                 df_job = p.map(func, df_job)
                 print('concatting chunk')
                 tokens_df_chunk = pd.concat(df_job)
@@ -80,29 +115,21 @@ class Tokenizer(object):
 
     
     def save_tokens(self):
-        client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
-        if self.test:
-            db = client[config['DB']['TEST_DATABASE']]
-        else:
-            db = client[config['DB']['DATABASE']]
-        review_tokens = db[config['DB']['USER_REVIEW_TOKENS_OKT']]
-        user_reviews = db[config['DB']['USER_REVIEWS']]
+        review_tokens = self.mongo_conn.user_review_tokens_okt
+        user_reviews = self.mongo_conn.user_reviews
 
         tokens_li = self.tokens_df.to_dict('records')
         try:
-            if self.test:
-                pass
-            else:
-                for tokens in tokens_li:
-                    if tokens['tokens'] != []:
-                        review_tokens.replace_one({'_id': tokens['_id']}, tokens, upsert=True)
-                    user_reviews.update_one({'_id': tokens['_id']}, {'$set': {'tokenized_okt': True}})
-                self.logger.info(f'{len(tokens_li)} comments are tokenized.')
-                print(f'{len(tokens_li)} comments are tokenized.')
+            for tokens in tokens_li:
+                if tokens['tokens'] != []:
+                    review_tokens.replace_one({'_id': tokens['_id']}, tokens, upsert=True)
+                user_reviews.update_one({'_id': tokens['_id']}, {'$set': {'tokenized_okt': True}})
+            logger.info(f'{len(tokens_li)} comments are tokenized.')
+            print(f'{len(tokens_li)} comments are tokenized.')
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
         finally:
-            client.close()
+            self.mongo_conn.close()
 
 
     def _set_n_processes(self, cores):
@@ -115,46 +142,20 @@ class Tokenizer(object):
         split_to = len(df) // 500000 + 1
         self.reviews_df_split = np.array_split(df, split_to)
         
-        self.logger.info(f'splited to {split_to}')
+        logger.info(f'splited to {split_to}')
         print(f'splited to {split_to}')
 
 
-    def _add_tokens(self, df):
-        okt = Okt()
-        df['tokens'] = df['review'].map(lambda x: self._get_tokens(okt, x))
-        return df
-
-
-    def _get_tokens(self, okt, string):
-        try:
-            result = okt.pos(string, norm=True, stem=True)
-            result = [token for token in result if len(token) == 2]
-            return result
-        except Exception as e:
-            self.logger.error(e)
-            return []
-
-
-    def _filter_empty_token_row(self, df):
-        return df[df['tokens'].astype('str') != '[]']
-
-
-    def _drop_columns(self, columns, df):
-        return df.drop(columns=columns)
-
-
 def process():
-    tokenizer = Tokenizer(test=args.test, cores=args.cores, rows=args.rows)
+    tokenizer = Tokenizer(cores=args.cores, rows=args.rows)
     tokenizer.get_reviews()
     tokenizer.tokenize()
     tokenizer.save_tokens()
 
 
 def job_estimater():
-    client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
-    db = client[config['DB']['DATABASE']]
-    user_reviews = db[config['DB']['USER_REVIEWS']]
-
+    mongo_conn = MongoConnector()
+    user_reviews = mongo_conn.user_reviews
 
     row_count = user_reviews.count_documents({'tokenized_okt': {'$in': [None, False]}})
     print(f'{row_count} rows are not tokenized.')
@@ -178,27 +179,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
-    parser.add_argument('-test', type=bool, default=0, help='use small data set for test')
-    parser.add_argument('-cores', type=int, default=0, help='how many cores ')
-    parser.add_argument('-rows', type=int, default=1000000, help='limit rows to process.')
-    args = parser.parse_args()
-
-    if args.root_path:
-        os.chdir(f'{args.root_path}')
-    sys.path[0] = os.getcwd()
-
-    with open('../config.json') as f:
-        config = json.load(f)
-
-    logging.basicConfig(
-        format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
-        level=logging.DEBUG
-    )
-    logger = logging.getLogger()
-    logger.info(f'test: {args.test}')
+    logger = get_logger(filename=Path(__file__).stem)
     logger.info(f'tokenize started. {datetime.now()}')
     print(f'tokenize started. {datetime.now()}')
     start_time = time.time()

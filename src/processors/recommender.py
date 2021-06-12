@@ -2,41 +2,53 @@ import argparse
 from datetime import datetime
 from datetime import timedelta
 import json
-import logging
 import multiprocessing as mp
 import os
 from pathlib import Path
-import pickle
 import sys
 import time
 
-from pymongo import MongoClient
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cosine
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import Normalizer
 
-import boto3
-from io import BytesIO
-import joblib
+def set_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
+    parser.add_argument('-cores', type=int, default=0, help='how many cores ')
+    parser.add_argument('-n_newest_rec', type=int, default=40)
+    parser.add_argument('-n_cluster_rec', type=int, default=40)
+    parser.add_argument('-n_genre_rec', type=int, default=40)
+    parser.add_argument('-n_actor_rec', type=int, default=15)
+    parser.add_argument('-n_director_rec', type=int, default=15)
+    parser.add_argument('-n_similar_rec', type=int, default=30)
+    return parser.parse_args()
+
+args = set_args()
+
+if args.root_path:
+    os.chdir(f'{args.root_path}')
+sys.path[0] = os.getcwd()
+
+from common._mongodb_connector import MongoConnector
+from common._s3_connector import S3Connector
+from common._logger import get_logger
+
+with open('../config.json') as f:
+    config = json.load(f)
 
 
 class Rec:
     def __init__(self, cores):
-        self.logger = logging.getLogger()
-        self.s3 = boto3.client(
-            's3',
-            aws_access_key_id=config['AWS']['AWS_ACCESS_KEY'],
-            aws_secret_access_key=config['AWS']['AWS_SECRET_KEY']
-        )
-        self.client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
-        self.db = self.client[config['DB']['DATABASE']]
+        self.mongo_conn = MongoConnector()
+        self.s3_conn = S3Connector()
+        self.n_processes = self._set_n_processes(cores)
         self.movies_df = self._load_movies_df()
         self.makers_df = self._load_makers_df()
         self.cluster_df = self._load_cluster_df()
         self.movie_vectors = self._load_movie_vectors()
-        self.n_processes = self._set_n_processes(cores)
 
         try:
             mp.set_start_method('spawn')
@@ -49,7 +61,7 @@ class Rec:
         newest_df = newest_df[['movie_id', 'poster_url']][:n]
         newest_rec = {'newest_rec': newest_df.to_dict('records')}
 
-        self._upload_to_s3(newest_rec, config['REC']['FRONT_NEWEST'])
+        self.s3_conn.upload_to_s3_byte(newest_rec, config['AWS']['S3_BUCKET'], config['REC']['FRONT_NEWEST'])
 
 
     def make_cluster_rec(self, n):
@@ -107,7 +119,7 @@ class Rec:
         for cluster in clusters:
             cluster_rec[cluster] = cluster_movie_df[cluster_movie_df['cluster'] == cluster][['movie_id']][:n].to_dict('records')
         
-        self._upload_to_s3(cluster_rec, config['REC']['FRONT_CLUSTER'])
+        self.s3_conn.upload_to_s3_byte(cluster_rec, config['AWS']['S3_BUCKET'], config['REC']['FRONT_CLUSTER'])
 
 
     def make_genre_rec(self, n):
@@ -136,7 +148,7 @@ class Rec:
         for genre in genres:
             genre_rec[genre] = genre_df[genre_df['genre'] == genre][['movie_id', 'poster_url']][:n].to_dict('records')
         
-        self._upload_to_s3(genre_rec, config['REC']['FRONT_GENRE'])
+        self.s3_conn.upload_to_s3_byte(genre_rec, config['AWS']['S3_BUCKET'], config['REC']['FRONT_GENRE'])
 
 
     def make_actor_rec(self, n):
@@ -176,7 +188,7 @@ class Rec:
             rec = actors_df[['movie_id', 'poster_url']][:n].to_dict('records')
             actor_rec[movie_id] = rec
 
-        self._upload_to_s3(actor_rec, config['REC']['DETAIL_ACTOR'])
+        self.s3_conn.upload_to_s3_byte(actor_rec, config['AWS']['S3_BUCKET'], config['REC']['DETAIL_ACTOR'])
 
 
     def make_director_rec(self, n):
@@ -209,7 +221,7 @@ class Rec:
             rec = directors_df[:n][['movie_id', 'poster_url']].to_dict('records')
             director_rec[movie_id] = rec
         
-        self._upload_to_s3(director_rec, config['REC']['DETAIL_DIRECTOR'])
+        self.s3_conn.upload_to_s3_byte(director_rec, config['AWS']['S3_BUCKET'], config['REC']['DETAIL_DIRECTOR'])
 
 
     def make_similar_rec(self, n):
@@ -255,7 +267,7 @@ class Rec:
             rec = similar_df[['movie_id', 'poster_url']].to_dict('records')
             similar_rec[movie_id] = rec
         
-        self._upload_to_s3(similar_rec, config['REC']['DETAIL_SIMILAR'])
+        self.s3_conn.upload_to_s3_byte(similar_rec, config['AWS']['S3_BUCKET'], config['REC']['DETAIL_SIMILAR'])
 
 
     def _set_n_processes(self, cores):
@@ -265,59 +277,27 @@ class Rec:
 
 
     def _load_movies_df(self):
-        movies_df = self._load_from_s3(config['AWS']['S3_BUCKET'], config['DATA']['MOVIE_INFO'])
+        movies_df = self.s3_conn.load_from_s3_byte(config['AWS']['S3_BUCKET'], config['DATA']['MOVIE_INFO'])
         return movies_df
 
 
     def _load_makers_df(self):
-        makers_df = pd.DataFrame(self.db[config['DB']['MAKERS']].find())
+        makers_df = pd.DataFrame(self.mongo_conn.makers.find())
+        self.mongo_conn.close()
         # makers_df = makers_df[makers_df['movie_id'].isin(self.movies_df['movie_id'])]
         makers_df = makers_df.rename(columns={'movie_poster_url': 'poster_url'})
         return makers_df
 
 
     def _load_cluster_df(self):
-        with BytesIO() as f:
-            p = self.s3.download_fileobj(config['AWS']['S3_BUCKET'], config['MODEL']['CLUSTER_PATH'], f)
-            f.seek(0)
-            cluster_df = joblib.load(f)
+        cluster_df = self.s3_conn.load_from_s3_byte(config['AWS']['S3_BUCKET'], config['MODEL']['CLUSTER_PATH'])
         return cluster_df
 
 
     def _load_movie_vectors(self):
-        with BytesIO() as f:
-            p = self.s3.download_fileobj(config['AWS']['S3_BUCKET'], config['MODEL']['MOVIE_VECTORS_PATH'], f)
-            f.seek(0)
-            movie_vectors = joblib.load(f)
+        movie_vectors = self.s3_conn.load_from_s3_byte(config['AWS']['S3_BUCKET'], config['MODEL']['MOVIE_VECTORS_PATH'])
         movie_vectors = movie_vectors[movie_vectors.index.isin(self.movies_df['movie_id'])]
         return movie_vectors
-
-
-    def _upload_to_s3(self, rec, s3_path):
-        p = pickle.dumps(rec)
-        file = BytesIO(p)
-
-        trial = 0
-        while True:
-            try:
-                self.s3.upload_fileobj(file, config['AWS']['S3_BUCKET'], s3_path)
-                return
-            except Exception as e:
-                trial += 1
-                self.logger.error(f'[trial {trial}]{e}')
-                if trial > 9:
-                    self.logger.error('failed to upload files!!')
-                    break
-                time.sleep(1)
-                continue
-
-
-    def _load_from_s3(self, bucket, path):
-        with BytesIO() as f:
-            p = self.s3.download_fileobj(bucket, path, f)
-            f.seek(0)
-            data = joblib.load(f)
-        return data
 
 
 def main():
@@ -331,30 +311,7 @@ def main():
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
-    parser.add_argument('-cores', type=int, default=0, help='how many cores ')
-    parser.add_argument('-n_newest_rec', type=int, default=40)
-    parser.add_argument('-n_cluster_rec', type=int, default=40)
-    parser.add_argument('-n_genre_rec', type=int, default=40)
-    parser.add_argument('-n_actor_rec', type=int, default=15)
-    parser.add_argument('-n_director_rec', type=int, default=15)
-    parser.add_argument('-n_similar_rec', type=int, default=30)
-    args = parser.parse_args()
-
-    if args.root_path:
-        os.chdir(f'{args.root_path}')
-    sys.path[0] = os.getcwd()
-
-    with open('../config.json') as f:
-        config = json.load(f)
-
-    logging.basicConfig(
-        format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
-        level=logging.DEBUG
-    )
-    logger = logging.getLogger()
+    logger = get_logger(filename=Path(__file__).stem)
     logger.info(f'process started. {datetime.now()}')
     print(f'process started. {datetime.now()}')
     start_time = time.time()

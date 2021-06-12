@@ -2,21 +2,38 @@ import argparse
 from datetime import datetime
 from datetime import timedelta
 import json
-import logging
 import os
 from pathlib import Path
 import re
 import sys
 import time
 
-from pymongo import MongoClient
-
 import pandas as pd
+
+def set_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
+    parser.add_argument('-pos_chunk', type=int, default=1000000, help='limit rows to process.')
+    parser.add_argument('-pos_target', type=str, nargs='+', default='Noun Adjective', help='pos list to extract.')
+    parser.add_argument('-all', type=bool, default=False, help='convert adjectives in all documents.')
+    return parser.parse_args()
+
+args = set_args()
+
+if args.root_path:
+    os.chdir(f'{args.root_path}')
+sys.path[0] = os.getcwd()
+
+from common._mongodb_connector import MongoConnector
+from common._logger import get_logger
+
+with open('../config.json') as f:
+    config = json.load(f)
 
 
 class MorphPostProcessor(object):
     def __init__(self, pos_chunk, pos_target, all):
-        self.logger = logging.getLogger()
+        self.mongo_conn = MongoConnector()
         self.pos_chunk = pos_chunk
         self.pos_target = pos_target
         self.adj_converter = self._load_adj_converter()
@@ -28,16 +45,14 @@ class MorphPostProcessor(object):
 
     
     def _reset_update_checker(self):
-        client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
-        db = client[config['DB']['DATABASE']]
-        morphs = db[config['DB']['USER_REVIEW_MORPHS_OKT']]
+        morphs = self.mongo_conn.user_review_morphs_okt
         
         try:
             morphs.update_many({}, {'$set': {'adj_converted': False}})
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
         finally:
-            client.close()
+            self.mongo_conn.close()
 
 
     def _load_adj_converter(self):
@@ -47,23 +62,19 @@ class MorphPostProcessor(object):
 
 
     def _set_iter_count(self):
-        client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
-        db = client[config['DB']['DATABASE']]
-        morphs = db[config['DB']['USER_REVIEW_MORPHS_OKT']]
+        morphs = self.mongo_conn.user_review_morphs_okt
 
         try:
             rows = morphs.count_documents({'adj_converted': {'$in': [None, False]}})
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
         finally:
-            client.close()
+            self.mongo_conn.close()
         self.iter = (rows // self.pos_chunk + 1) if rows > 0 else 0
 
     
     def get_adjs(self):
-        client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
-        db = client[config['DB']['DATABASE']]
-        morphs = db[config['DB']['USER_REVIEW_MORPHS_OKT']]
+        morphs = self.mongo_conn.user_review_morphs_okt
 
         try:
             adjs = morphs.find(
@@ -72,9 +83,9 @@ class MorphPostProcessor(object):
             )[:self.pos_chunk]
             adj_df = pd.DataFrame(adjs)
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
         finally:
-            client.close()
+            self.mongo_conn.close()
         
         print(len(adj_df))
         print(adj_df.iloc[0])
@@ -101,9 +112,7 @@ class MorphPostProcessor(object):
 
     
     def save_adjs(self):
-        client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
-        db = client[config['DB']['DATABASE']]
-        morphs = db[config['DB']['USER_REVIEW_MORPHS_OKT']]
+        morphs = self.mongo_conn.user_review_morphs_okt
 
         try:
             for idx in range(len(self.adj_df)):
@@ -119,9 +128,9 @@ class MorphPostProcessor(object):
                 )
             print(f'{len(self.adj_df)} docs are converted.')
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
         finally:
-            client.close()
+            self.mongo_conn.close()
     
 
 def main():
@@ -137,26 +146,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
-    parser.add_argument('-pos_chunk', type=int, default=1000000, help='limit rows to process.')
-    parser.add_argument('-pos_target', type=str, nargs='+', default='Noun Adjective', help='pos list to extract.')
-    parser.add_argument('-all', type=bool, default=False, help='convert adjectives in all documents.')
-    args = parser.parse_args()
-
-    if args.root_path:
-        os.chdir(f'{args.root_path}')
-    sys.path[0] = os.getcwd()
-
-    with open('../config.json') as f:
-        config = json.load(f)
-
-    logging.basicConfig(
-        format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
-        level=logging.DEBUG
-    )
-    logger = logging.getLogger()
+    logger = get_logger(filename=Path(__file__).stem)
     logger.info(f'morphs_okt_postprocess started. {datetime.now()}')
     print(f'morphs_okt_postprocess started. {datetime.now()}')
     start_time = time.time()

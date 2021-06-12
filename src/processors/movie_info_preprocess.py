@@ -1,32 +1,46 @@
 import argparse
 from datetime import datetime
 from datetime import timedelta
-from io import BytesIO
 import json
-import logging
 import os
 from pathlib import Path
-import pickle
 import sys
 import time
 
-import boto3
 import pandas as pd
-from pymongo import MongoClient
+
+def set_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
+    parser.add_argument('-minutes', type=int, default=1440, help='process duration (minutes)')
+    return parser.parse_args()
+
+args = set_args()
+
+if args.root_path:
+    os.chdir(f'{args.root_path}')
+sys.path[0] = os.getcwd()
+
+from common._mongodb_connector import MongoConnector
+from common._s3_connector import S3Connector
+from common._logger import get_logger
+
+with open('../config.json') as f:
+    config = json.load(f)
 
 
 class MovieInfoPreprocessor(object):
     def __init__(self):
-        self._set_init()
+        self.mongo_conn = MongoConnector()
+        self.s3_conn = S3Connector()
+        self._load_data()
 
 
-    def _set_init(self):
-        self.client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
-        self.db = self.client[config['DB']['DATABASE']]
-        self.movies_df = pd.DataFrame(self.db[config['DB']['MOVIES']].find())
-        self.makers_df = pd.DataFrame(self.db[config['DB']['MAKERS']].find())
-        self.reviews_df = pd.DataFrame(self.db[config['DB']['USER_REVIEWS']].find())
-        self.client.close()
+    def _load_data(self):
+        self.movies_df = pd.DataFrame(self.mongo_conn.movies.find())
+        self.makers_df = pd.DataFrame(self.mongo_conn.makers.find())
+        self.reviews_df = pd.DataFrame(self.mongo_conn.user_reviews.find())
+        self.mongo_conn.close()
 
 
     def filter_fault_rows(self):
@@ -128,17 +142,7 @@ class MovieInfoPreprocessor(object):
 
 
     def upload_to_s3(self):
-        s3 = boto3.client(
-            's3',
-            aws_access_key_id=config['AWS']['AWS_ACCESS_KEY'],
-            aws_secret_access_key=config['AWS']['AWS_SECRET_KEY']
-        )
-
-        p = pickle.dumps(self.movies_df)
-        file = BytesIO(p)
-        s3.upload_fileobj(file, config['AWS']['S3_BUCKET'], config['DATA']['MOVIE_INFO'])
-
-        return self
+        self.s3_conn.upload_to_s3_byte(self.movies_df, config['AWS']['S3_BUCKET'], config['DATA']['MOVIE_INFO'])
 
 
 def main():
@@ -147,24 +151,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
-    parser.add_argument('-minutes', type=int, default=1440, help='process duration (minutes)')
-    args = parser.parse_args()
-
-    if args.root_path:
-        os.chdir(f'{args.root_path}')
-    sys.path[0] = os.getcwd()
-
-    with open('../config.json') as f:
-        config = json.load(f)
-
-    logging.basicConfig(
-        format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
-        level=logging.DEBUG
-    )
-    logger = logging.getLogger()
+    logger = get_logger(filename=Path(__file__).stem)
     start_time = time.time()
     logger.info(f'Process started at {datetime.now()}')
     print(f'Process started at {datetime.now()}')

@@ -2,46 +2,46 @@ import argparse
 from datetime import datetime
 from datetime import timedelta
 import json
-import logging
 import os
 from pathlib import Path
-import pickle
 import sys
 import time
 
-from pymongo import MongoClient
 import numpy as np
 import pandas as pd
+from pandas.core.common import flatten
 
-import boto3
-from io import BytesIO
-import joblib
+def set_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
+    return parser.parse_args()
+
+args = set_args()
+
+if args.root_path:
+    os.chdir(f'{args.root_path}')
+sys.path[0] = os.getcwd()
+
+from common._mongodb_connector import MongoConnector
+from common._s3_connector import S3Connector
+from common._logger import get_logger
+
+with open('../config.json') as f:
+    config = json.load(f)
 
 
 def main():
-
-    s3 = boto3.client(
-        's3',
-        aws_access_key_id=config['AWS']['AWS_ACCESS_KEY'],
-        aws_secret_access_key=config['AWS']['AWS_SECRET_KEY']
-    )
-
-    client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
-    db = client[config['DB']['DATABASE']]
-
-    def _load_from_s3(bucket, path):
-        with BytesIO() as f:
-            p = s3.download_fileobj(bucket, path, f)
-            f.seek(0)
-            data = joblib.load(f)
-        return data
+    mongo_conn = MongoConnector()
+    s3_conn = S3Connector()
 
     def _load_movies_df():
-        movies_df = _load_from_s3(config['AWS']['S3_BUCKET'], config['DATA']['MOVIE_INFO'])
+        movies_df = s3_conn.load_from_s3_byte(config['AWS']['S3_BUCKET'], config['DATA']['MOVIE_INFO'])
         return movies_df
 
     def _load_makers_df():
-        makers_df = pd.DataFrame(db[config['DB']['MAKERS']].find())
+        makers_df = pd.DataFrame(mongo_conn.makers.find())
+        mongo_conn.close()
+        
         makers_df = pd.merge(makers_df, movies_df[['movie_id', 'review_count']], on='movie_id', validate='many_to_one')
         roles = ['actor_main', 'director', 'writer', 'actor_sub']
         makers_df['role'] = pd.Categorical(
@@ -53,17 +53,11 @@ def main():
         return makers_df
 
     def _load_cluster_df():
-        with BytesIO() as f:
-            p = s3.download_fileobj(config['AWS']['S3_BUCKET'], config['MODEL']['CLUSTER_PATH'], f)
-            f.seek(0)
-            cluster_df = joblib.load(f)
+        cluster_df = s3_conn.load_from_s3_byte(config['AWS']['S3_BUCKET'], config['MODEL']['CLUSTER_PATH'])
         return cluster_df
 
     def _load_movie_vectors():
-        with BytesIO() as f:
-            p = s3.download_fileobj(config['AWS']['S3_BUCKET'], config['MODEL']['MOVIE_VECTORS_PATH'], f)
-            f.seek(0)
-            movie_vectors = joblib.load(f)
+        movie_vectors = s3_conn.load_from_s3_byte(config['AWS']['S3_BUCKET'], config['MODEL']['MOVIE_VECTORS_PATH'])
         movie_vectors = movie_vectors[movie_vectors.index.isin(movies_df['movie_id'])]
         return movie_vectors
 
@@ -120,7 +114,6 @@ def main():
     maker_names_hash = generate_hash(maker_names)
 
     # 장르
-    from pandas.core.common import flatten
     genre_names = set(flatten(movies_df['genre']))
     genre_hash = generate_hash(genre_names)
 
@@ -175,49 +168,13 @@ def main():
     name_id_hash['genre'] = genre_id_hash
     name_id_hash['nation'] = nation_id_hash
 
-
-    def upload_to_s3(data, s3_path):
-        p = pickle.dumps(data)
-        file = BytesIO(p)
-
-        trial = 0
-        while True:
-            try:
-                s3.upload_fileobj(file, config['AWS']['S3_BUCKET'], s3_path)
-                return
-            except Exception as e:
-                trial += 1
-                logger.error(f'[trial {trial}]{e}')
-                if trial > 9:
-                    logger.error('failed to upload files!!')
-                    break
-                time.sleep(1)
-                continue
-
-
-    upload_to_s3(subword_hash, config['DATA']['SUBWORD_HASH'])
-    upload_to_s3(name_id_hash, config['DATA']['NAME_ID_HASH'])
-
+    # unload
+    s3_conn.upload_to_s3_byte(subword_hash, config['AWS']['S3_BUCKET'], config['DATA']['SUBWORD_HASH'])
+    s3_conn.upload_to_s3_byte(name_id_hash, config['AWS']['S3_BUCKET'], config['DATA']['NAME_ID_HASH'])
 
 
 if __name__=='__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
-    args = parser.parse_args()
-
-    if args.root_path:
-        os.chdir(f'{args.root_path}')
-    sys.path[0] = os.getcwd()
-
-    with open('../config.json') as f:
-        config = json.load(f)
-
-    logging.basicConfig(
-        format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
-        level=logging.DEBUG
-    )
-    logger = logging.getLogger()
+    logger = get_logger(filename=Path(__file__).stem)
     logger.info(f'process started. {datetime.now()}')
     print(f'process started. {datetime.now()}')
     start_time = time.time()

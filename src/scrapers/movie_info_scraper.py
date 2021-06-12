@@ -19,19 +19,31 @@ import pandas as pd
 
 import boto3
 import pymongo
-from pymongo import MongoClient
+
+def set_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
+    parser.add_argument('-minutes', type=int, default=1440, help='process duration (minutes)')
+    return parser.parse_args()
+
+args = set_args()
+
+if args.root_path:
+    os.chdir(f'{args.root_path}')
+sys.path[0] = os.getcwd()
+
+from common._mongodb_connector import MongoConnector
+from common._s3_connector import S3Connector
+from common._logger import get_logger
+
+with open('../config.json') as f:
+    config = json.load(f)
 
 
 class MovieScraper:
     def __init__(self):
-        self.logger = logging.getLogger()
-        self.client = MongoClient(config["DB"]["DB_URL"], config["DB"]["DB_PORT"])
-        self.db = self.client[config["DB"]["DATABASE"]]
-        self.s3 = boto3.client(
-            's3',
-            aws_access_key_id=config["AWS"]["AWS_ACCESS_KEY"],
-            aws_secret_access_key=config["AWS"]["AWS_SECRET_KEY"]
-        )
+        self.mongo_conn = MongoConnector()
+        self.s3_conn = S3Connector()
         self.session = requests.Session()
         self.headers = config["SCRAPER"]["HEADERS"]
         self.queue = self._set_queue()
@@ -39,13 +51,16 @@ class MovieScraper:
         self.movie = dict()
         self.makers = []
 
+
     def get_makers(self):
         return self.makers
+
 
     def set_movie_id(self):
         self.current_target = self.queue.get()
         self.movie['_id'] = self.current_target
-        self.logger.info(f"Start processing movie_id: {self.movie['_id']}")
+        logger.info(f"Start processing movie_id: {self.movie['_id']}")
+
 
     def scrape_basic(self):
         path = config["SCRAPER"]["NAVER_MOVIE_BASIC_PATH"] + self.current_target
@@ -57,7 +72,7 @@ class MovieScraper:
             self.movie['title_kor'] = title_tags.find('h3', {'class': 'h_movie'}).find('a', {'href': f"./basic.nhn?code={self.movie['_id']}"}).get_text(strip=True)
             self.movie['title_eng'] = title_tags.find('strong', {'class': 'h_movie2'}).get_text(strip=True).replace('\r', '').replace('\t', '').replace('\n', '')
         except Exception as e:
-            self.logger.warning(e)
+            logger.warning(e)
             pass
 
         try:
@@ -115,11 +130,11 @@ class MovieScraper:
             poster_s3_url = f'https://{config["AWS"]["S3_BUCKET"]}.s3.{config["AWS"]["S3_BUCKET_REGION"]}.amazonaws.com/{poster_s3_path}'
             self.movie['poster_url'] = poster_s3_url
         except Exception as e:
-            self.logger.warning(e)
+            logger.warning(e)
             pass
         
         if self.movie.get('poster_url') != None:
-            self._upload_to_s3(poster_url, poster_s3_path)
+            self.s3_conn.upload_to_s3_from_url(poster_url, config['AWS']['S3_BUCKET'], poster_s3_path)
 
         try:
             stillcut_url = soup.find('div', {'class': 'viewer_img'}).find('img')['src']
@@ -127,14 +142,15 @@ class MovieScraper:
             stillcut_s3_url = f'https://{config["AWS"]["S3_BUCKET"]}.s3.{config["AWS"]["S3_BUCKET_REGION"]}.amazonaws.com/{stillcut_s3_path}'
             self.movie['stillcut_url'] = stillcut_s3_url
         except Exception as e:
-            self.logger.warning(e)
+            logger.warning(e)
             pass
 
         if self.movie.get('stillcut_url') != None:
-            self._upload_to_s3(stillcut_url, stillcut_s3_path)
+            self.s3_conn.upload_to_s3_from_url(stillcut_url, config['AWS']['S3_BUCKET'], stillcut_s3_path)
         
         self.movie['updated_at'] = datetime.now()
-        
+
+
     def scrape_detail(self):
         path = config["SCRAPER"]["NAVER_MOVIE_DETAIL_PATH"] + self.current_target
         html = self._get_html(path)
@@ -146,7 +162,7 @@ class MovieScraper:
             people_tags = soup.find('div', {'class': re.compile('section_group section_group_frst')})
             actor_tags = people_tags.find('ul', {'class': 'lst_people'}).find_all('div', {'class': 'p_info'})
         except Exception as e:
-            self.logger.warning(e)
+            logger.warning(e)
             pass
 
         main_actors = []
@@ -183,7 +199,7 @@ class MovieScraper:
                     sub_actors.append(name)
                     sub_actor_ids.append(maker_id)
         except Exception as e:
-            self.logger.warning(e)
+            logger.warning(e)
             pass
 
         # director
@@ -204,7 +220,7 @@ class MovieScraper:
                 'release_date': self.movie['release_date']
             })
         except Exception as e:
-            self.logger.warning(e)
+            logger.warning(e)
             pass
 
         # writer
@@ -225,7 +241,7 @@ class MovieScraper:
                 'release_date': self.movie['release_date']
             })
         except Exception as e:
-            self.logger.warning(e)
+            logger.warning(e)
             pass
 
         self.movie['main_actors'] = main_actors
@@ -234,28 +250,30 @@ class MovieScraper:
         self.movie['sub_actor_ids'] = sub_actor_ids
         self.makers = maker_li
 
+
     def upsert_data_to_db(self):
         try:
-            self.db[config["DB"]["MOVIES"]].replace_one({'_id': self.movie['_id']}, self.movie, upsert=True)
+            self.mongo_conn.movies.replace_one({'_id': self.movie['_id']}, self.movie, upsert=True)
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
             pass
 
         try:
-            self.db[config['DB']['COMMENT_QUEUE']].update_one({}, {'$push': {'movies': self.movie['_id']}})
+            self.mongo_conn.comment_queue.update_one({}, {'$push': {'movies': self.movie['_id']}})
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
 
         for maker in self.makers:
             try:
-                self.db[config["DB"]["MAKERS"]].replace_one({'_id': maker['_id']}, maker, upsert=True)
+                self.mongo_conn.makers.replace_one({'_id': maker['_id']}, maker, upsert=True)
             except pymongo.errors.DuplicateKeyError as dke:
                 pass
             except Exception as e:
-                self.logger.error(e)
+                logger.error(e)
             finally:
                 pass
     
+
     def add_movie_ids(self):
         path = config["SCRAPER"]["NAVER_MOVIE_BASIC_PATH"] + self.current_target
         html = self._get_html(path)
@@ -266,66 +284,63 @@ class MovieScraper:
             movie_ids = [tag['href'][tag['href'].index('=')+1:] for tag in tags]
 
             # add to queue
-            db_ids = [doc['_id'] for doc in self.db[config["DB"]["MOVIES"]].find({'_id': {'$in': movie_ids}})]
+            db_ids = [doc['_id'] for doc in self.mongo_conn.movies.find({'_id': {'$in': movie_ids}})]
             new_ids = list(set(movie_ids) - set(db_ids) - set(self.queue.queue))
             for id in new_ids:
                 self.queue.put(id)
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
             new_ids = []
             pass
 
         # add to db
         try:
             if len(new_ids) > 0:
-                self.db[config["DB"]["MOVIE_QUEUE"]].update_one({}, {'$push': {'movies': {'$each': new_ids}}})
+                self.mongo_conn.movie_queue.update_one({}, {'$push': {'movies': {'$each': new_ids}}})
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
 
     def refresh_status(self):
         try:
-            self.db[config["DB"]["MOVIE_QUEUE"]].update_one({}, {'$pop': {'movies': -1}})
+            self.mongo_conn.movie_queue.update_one({}, {'$pop': {'movies': -1}})
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
             pass
 
         self.movie = dict()
         self.makers = []
-    
-    def close_connection(self):
-        self.client.close()
+
 
     def _set_queue(self):
         q = queue.Queue()
-        movie_queue = self.db[config["DB"]["MOVIE_QUEUE"]]
-        if movie_queue.count_documents({}) == 0 or len(movie_queue.find_one()['movies']) == 0:
+        if self.mongo_conn.movie_queue.count_documents({}) == 0 or len(self.mongo_conn.movie_queue.find_one()['movies']) == 0:
             movie_ids = self._set_init_movie_list()
         else:
-            movie_ids = movie_queue.find_one()['movies']
+            movie_ids = self.mongo_conn.movie_queue.find_one()['movies']
         
         for id in movie_ids:
             q.put(id)
         return q
+
 
     def _get_html(self, path):
         self.headers['path'] = path
         try:
             html = self.session.get(path, headers=self.headers, timeout=30).text
         except HTTPError as e:
-            self.logger.error(e)
+            logger.error(e)
         except URLError as e:
-            self.logger.error(e)
+            logger.error(e)
         return html
+
 
     def _set_init_movie_list(self):
         movie_ids = []
 
         # db comment collection에서 수집
-        movies = self.db[config['DB']['MOVIES']]
-        info_movie_ids = pd.DataFrame(movies.find({}, {'_id': 1}))
+        info_movie_ids = pd.DataFrame(self.mongo_conn.movies.find({}, {'_id': 1}))
 
-        reviews = self.db[config['DB']['USER_REVIEWS']]
-        movie_ids_from_reviews = pd.DataFrame(reviews.find({}, {'_id': 0, 'movie_id': 1})).drop_duplicates()
+        movie_ids_from_reviews = pd.DataFrame(self.mongo_conn.user_reviews.find({}, {'_id': 0, 'movie_id': 1})).drop_duplicates()
         
         target_ids = movie_ids_from_reviews[~movie_ids_from_reviews['movie_id'].isin(info_movie_ids['_id'])]['movie_id'].to_list()
         movie_ids += target_ids
@@ -347,48 +362,31 @@ class MovieScraper:
                 tags = [title.find('a') for title in titles]
                 urls = [tag['href'] for tag in tags]
             except Exception as e:
-                self.logger.error(e)
+                logger.error(e)
 
             for url in urls:
                 movie_id = url[url.index('=')+1:]
-                if self.db[config["DB"]["MOVIES"]].find_one({ '_id': movie_id}) is None:
+                if self.mongo_conn.movies.find_one({ '_id': movie_id}) is None:
                     movie_ids.append(movie_id)
             sleep()
         
         movie_ids = list(set(movie_ids))
 
         try:
-            self.db[config["DB"]["MOVIE_QUEUE"]].drop()
-            self.db[config["DB"]["MOVIE_QUEUE"]].insert_one({'_id': 1, 'movies': movie_ids})
+            self.mongo_conn.movie_queue.drop()
+            self.mongo_conn.movie_queue.insert_one({'_id': 1, 'movies': movie_ids})
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
 
-        self.logger.info(f'{len(movie_ids)} movies are added to queue.')
+        logger.info(f'{len(movie_ids)} movies are added to queue.')
         print(f'{len(movie_ids)} movies are added to queue.')
 
         return movie_ids
 
-    def _upload_to_s3(self, url_from, path_to):
-        trial = 0
-        while True:
-            try:
-                with requests.get(url_from, stream=True) as r:
-                    self.s3.upload_fileobj(
-                        r.raw, 
-                        config['AWS']['S3_BUCKET'], 
-                        path_to
-                    )
-                break
-            except Exception as e:
-                trial += 1
-                self.logger.error(f'[trial {trial}]{e}')
-                if trial > 9:
-                    break
-                time.sleep(1)
-                continue
 
 def sleep():
     return time.sleep(config["SCRAPER"]["MOVIE_INFO_SLEEP_INTERVAL"] - random.random()*0.2)
+
 
 def main():
     scraper = MovieScraper()
@@ -415,29 +413,12 @@ def main():
         scraper.refresh_status()
         sleep()
     
-    scraper.close_connection()
+    scraper.mongo_conn.close()
     return movie_count, maker_count
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
-    parser.add_argument('-minutes', type=int, default=1440, help='process duration (minutes)')
-    args = parser.parse_args()
-
-    if args.root_path:
-        os.chdir(f'{args.root_path}')
-    sys.path[0] = os.getcwd()
-
-    with open('../config.json') as f:
-        config = json.load(f)
-
-    logging.basicConfig(
-        format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
-        level=logging.DEBUG
-    )
-    logger = logging.getLogger()
+    logger = get_logger(filename=Path(__file__).stem)
     stop_time = datetime.now() + timedelta(minutes=args.minutes)
     logger.info(f'process started. finish at {stop_time}')
     print(f'process started. finish at {stop_time}')

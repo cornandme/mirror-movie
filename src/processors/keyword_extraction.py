@@ -1,37 +1,43 @@
 import argparse
 from datetime import datetime
 from datetime import timedelta
-from io import BytesIO
 import json
-import logging
 import os
 from pathlib import Path
-import pickle
 import sys
 import time
 
-import boto3
-import joblib
 import numpy as np
 import pandas as pd
-from pymongo import MongoClient
 from scipy.stats import entropy
+
+def set_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
+    parser.add_argument('-df_floor', type=int, default=30)
+    parser.add_argument('-keyword_length', type=int, default=4)
+    return parser.parse_args()
+
+args = set_args()
+
+if args.root_path:
+    os.chdir(f'{args.root_path}')
+sys.path[0] = os.getcwd()
+
+from common._mongodb_connector import MongoConnector
+from common._s3_connector import S3Connector
+from common._logger import get_logger
+
+with open('../config.json') as f:
+    config = json.load(f)
 
 
 class KeywordExtractor(object):
     def __init__(self):
-        self.logger = logging.getLogger()
-        self._set_s3()
-        self.cluster_rec = self._load_from_s3(config['AWS']['S3_BUCKET'], config['REC']['FRONT_CLUSTER'])
+        self.mongo_conn = MongoConnector()
+        self.s3_conn = S3Connector()
+        self.cluster_rec = self.s3_conn.load_from_s3_byte(config['AWS']['S3_BUCKET'], config['REC']['FRONT_CLUSTER'])
         self.cluster_dic = self._make_cluster_dic()
-
-    
-    def _set_s3(self):
-        self.s3 = boto3.client(
-            's3',
-            aws_access_key_id=config['AWS']['AWS_ACCESS_KEY'],
-            aws_secret_access_key=config['AWS']['AWS_SECRET_KEY']
-        )
 
 
     def _make_cluster_dic(self):
@@ -43,15 +49,12 @@ class KeywordExtractor(object):
 
 
     def get_morphs(self):
-        client = MongoClient(config['DB']['DB_URL'], config['DB']['DB_PORT'])
-        db = client[config['DB']['DATABASE']]
-
         try:
-            morphs = db[config['DB']['USER_REVIEW_MORPHS_OKT']].find({}, {'_id': 0, 'movie_id': 1, 'adjectives': 1})
+            morphs = self.mongo_conn.user_review_morphs_okt.find({}, {'_id': 0, 'movie_id': 1, 'adjectives': 1})
         except Exception as e:
-            self.logger.error(e)
+            logger.error(e)
         finally:
-            client.close()
+            self.mongo_conn.close()
 
         self.morphs_df = pd.DataFrame(morphs).set_index('movie_id').sort_index()
         self.morphs_df = self.morphs_df.rename(columns={'adjectives': 'morphs'})
@@ -119,7 +122,7 @@ class KeywordExtractor(object):
 
 
     def upload_cluster_rec(self):
-        self._upload_to_s3(self.cluster_rec, config['REC']['FRONT_CLUSTER'])
+        self.s3_conn.upload_to_s3_byte(self.cluster_rec, config['AWS']['S3_BUCKET'], config['REC']['FRONT_CLUSTER'])
 
 
     def _make_tf_dic(self, words):
@@ -176,33 +179,6 @@ class KeywordExtractor(object):
         return cluster_keyword_dic
 
 
-    def _load_from_s3(self, bucket, path):
-        with BytesIO() as f:
-            p = self.s3.download_fileobj(bucket, path, f)
-            f.seek(0)
-            data = joblib.load(f)
-        return data
-
-
-    def _upload_to_s3(self, rec, s3_path):
-        p = pickle.dumps(rec)
-        file = BytesIO(p)
-
-        trial = 0
-        while True:
-            try:
-                self.s3.upload_fileobj(file, config['AWS']['S3_BUCKET'], s3_path)
-                return
-            except Exception as e:
-                trial += 1
-                self.logger.error(f'[trial {trial}]{e}')
-                if trial > 9:
-                    self.logger.error('failed to upload files!!')
-                    break
-                time.sleep(1)
-                continue
-
-
 def main():
     keyword_extractor = KeywordExtractor()
     keyword_extractor.get_morphs() \
@@ -214,25 +190,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
-    parser.add_argument('-df_floor', type=int, default=30)
-    parser.add_argument('-keyword_length', type=int, default=4)
-    args = parser.parse_args()
-
-    if args.root_path:
-        os.chdir(f'{args.root_path}')
-    sys.path[0] = os.getcwd()
-
-    with open('../config.json') as f:
-        config = json.load(f)
-
-    logging.basicConfig(
-        format='[%(asctime)s|%(levelname)s|%(module)s:%(lineno)s %(funcName)s] %(message)s', 
-        filename=f'../logs/{Path(__file__).stem}_{datetime.now().date()}.log',
-        level=logging.DEBUG
-    )
-    logger = logging.getLogger()
+    logger = get_logger(filename=Path(__file__).stem)
     logger.info(f'keyword_extraction started. {datetime.now()}')
     print(f'keyword_extraction started. {datetime.now()}')
     start_time = time.time()
