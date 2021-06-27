@@ -40,6 +40,7 @@ class WordEmbeddingModel:
         self.s3_conn = S3Connector()
         self.all = all
         self.n_processes = (mp.cpu_count() // 2) - 1
+        self.model_params = config['MODEL']['FASTTEXT_PARAMS']
         self.morphs_df = None
         self.model = None
 
@@ -93,13 +94,20 @@ class WordEmbeddingModel:
         model = self.model
 
         if not model:
+            logger.info('building new model.')
+            logger.info(f'model params: {self.model_params}')
+
             model = FastText(
-                vector_size=300, 
-                window=7, 
-                sg=1,
-                negative=5,
-                min_count=2,
-                bucket=1500,
+                vector_size=self.model_params['VECTOR_SIZE'], 
+                window=self.model_params['WINDOW'], 
+                sg=self.model_params['SG'],
+                negative=self.model_params['NEGATIVE'],
+                ns_exponent=self.model_params['NS_EXPONENT'],
+                sample=self.model_params['SAMPLE'],
+                min_n=self.model_params['MIN_N'],
+                max_n=self.model_params['MAX_N'],
+                min_count=self.model_params['MIN_COUNT'],
+                bucket=self.model_params['BUCKET'],
                 workers=self.n_processes
             )
 
@@ -114,7 +122,7 @@ class WordEmbeddingModel:
         model.train(
             corpus_iterable=sentences, 
             total_examples=len(sentences), 
-            epochs=1
+            epochs=self.model_params['EPOCHS']
         )
 
         self.model = model
