@@ -56,7 +56,7 @@ class MorphPostProcessor(object):
 
 
     def _load_adj_converter(self):
-        with open('adj_converter.json', 'rb') as f:
+        with open('processors/adj_converter.json', 'rb') as f:
             adj_converter = json.load(f)
         return adj_converter
 
