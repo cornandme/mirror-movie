@@ -128,7 +128,7 @@ def main():
         processor.get_morphs()
         processor.make_movie_vectors()
     processor.concat_vectors()
-    processor.s3_conn.upload_to_s3_byte(processor.movie_vectors, config['AWS']['S3_BUCKET'], config['PROCESS']['MOVIE_VECTORS_PATH'])
+    processor.s3_conn.upload_to_s3_byte(processor.movie_vectors, config['AWS']['S3_BUCKET'], config['MODEL']['MOVIE_VECTORS_PATH'])
 
 
 if __name__ == '__main__':
