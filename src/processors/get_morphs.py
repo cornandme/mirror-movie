@@ -14,7 +14,8 @@ def set_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-root_path', type=str, default=None, help='config file path. use for airflow DAG.')
     parser.add_argument('-pos_chunk', type=int, default=1000000, help='limit rows to process.')
-    parser.add_argument('-pos_target', type=str, nargs='+', default='NNG NNP VV VA MAG VX NF NV', help='pos list to extract')
+    parser.add_argument('-pos_target', type=str, nargs='+', default='NNG NNP VV VA MAG VX NF NV XR', help='pos list to extract')
+    parser.add_argument('-all', type=bool, default=False, help='extract morphs from entire corpus.')
     return parser.parse_args()
 
 args = set_args()
@@ -31,14 +32,34 @@ with open('../config.json') as f:
 
 
 class MorphExtractor:
-    def __init__(self, pos_chunk, pos_target):
+    def __init__(self, pos_chunk, pos_target, all):
         self.mongo_conn = MongoConnector()
         self.pos_chunk = pos_chunk
         self.pos_target = pos_target
-        self._set_iter_count()
+        self.all = all
 
         print(pos_chunk)
         print(pos_target)
+
+        if self.all:
+            logger.info('get morphs from entire corpus. dropping morphs collection.')
+            self._drop_morphs()
+
+        self._set_iter_count()
+
+
+    def _drop_morphs(self):
+        tokens = self.mongo_conn.user_review_tokens
+        morphs = self.mongo_conn.user_review_morphs
+
+        try:
+            morphs.drop()
+            morphs.create_index('movie_id')
+            tokens.update_many({}, {'$set': {'morphed': False}})
+        except Exception as e:
+            logger.error(e)
+        finally:
+            self.mongo_conn.close()
 
 
     def _set_iter_count(self):
@@ -120,7 +141,7 @@ class MorphExtractor:
 
 
 def main():
-    morph_extractor = MorphExtractor(pos_chunk=args.pos_chunk, pos_target=args.pos_target)
+    morph_extractor = MorphExtractor(pos_chunk=args.pos_chunk, pos_target=args.pos_target, all=args.all)
     
     iter_count = 0
     while True:
