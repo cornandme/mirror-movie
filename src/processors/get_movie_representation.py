@@ -115,6 +115,8 @@ class MovieVectorProcessor:
         movie_vectors = movie_vectors.groupby('movie_id').sum()
 
         self.movie_vector_li.append(movie_vectors)
+
+        logger.info('make movie vectors finished')
         print('make movie vectors finished')
 
     

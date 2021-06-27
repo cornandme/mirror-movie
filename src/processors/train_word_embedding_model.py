@@ -76,6 +76,7 @@ class WordEmbeddingModel:
 
         try:
             model = self.s3_conn.load_from_s3_byte(config['AWS']['S3_BUCKET'], config['MODEL']['MODEL_PATH'])
+            logger.info('model loaded')
         except Exception:
             model = None
         
