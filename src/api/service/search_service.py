@@ -19,9 +19,11 @@ class SearchService(object):
         result = self.search_hash(keyword)
         
         # 벡터 검색으로 보충
-        if len(result['movies']) < 50:
+        if len(result['movies']) < 100:
             movies = self.search_movie_by_vector(keyword)
-            result['movies'] = self.get_unique_ordered_list(result['movies'] + movies)[:50]
+            result['movies'] = self.get_unique_ordered_list(result['movies'] + movies)[:100]
+        else:
+            result['movies'] = result['movies'][:100]
         
         '''
         if len(result['similar_words']) < 15:
@@ -55,10 +57,10 @@ class SearchService(object):
         maker_result = list(self.flatten([name_id_hash['maker'].get(maker) for maker in makers]))
         
         genres = subword_hash['genre'].get(keyword) or []
-        genre_result = list(self.flatten([name_id_hash['genre'].get(genre) for genre in genres]))[:5]
+        genre_result = list(self.flatten([name_id_hash['genre'].get(genre) for genre in genres]))[:30]
         
         nations = subword_hash['nation'].get(keyword) or []
-        nation_result = list(self.flatten([name_id_hash['nation'].get(nation) for nation in nations]))[:5]
+        nation_result = list(self.flatten([name_id_hash['nation'].get(nation) for nation in nations]))[:30]
         
         keyword_li = titles + makers + genres + nations
         if len(keyword_li) == 0:
@@ -70,7 +72,7 @@ class SearchService(object):
         
         # 영화 병합
         rec = title_result + maker_result + genre_result + nation_result
-        rec = self.get_unique_ordered_list(rec)[:50]
+        rec = self.get_unique_ordered_list(rec)
         
         return {
             'movies': rec,
@@ -80,36 +82,46 @@ class SearchService(object):
 
     def search_movie_by_vector(self, keyword):
         model = self.word_model.fasttext_word_model
-        cluster_df = self.word_model.cluster_df
-        movie_vectors = self.word_model.movie_vectors
 
         # get keyword vector
         tokens = self.komoran.morphs(keyword)
         vectors = np.array([model.wv[token] for token in tokens])
         keyword_vector = np.sum(vectors, axis=0)
+        movie_ids = self.get_movies_by_vector(keyword_vector)
+
+        return movie_ids
+
+
+    def get_movies_by_vector(self, vector):
+        cluster_df = self.word_model.cluster_df
+        movie_vectors = self.word_model.movie_vectors
 
         # find closest cluster
-        cluster_distances = cluster_df['vector'].map(lambda x: cosine(x, keyword_vector))
-        target_cluster = cluster_distances.sort_values(ascending=True).index[0]
+        cluster_distances = cluster_df['vector'].map(lambda x: cosine(x, vector))
+        target_clusters = cluster_distances.sort_values(ascending=True).index[:len(cluster_distances) // 20]
 
         # find closest movie in target cluster
-        filtered_df = movie_vectors[movie_vectors['cluster'] == target_cluster]
-        distances = filtered_df['vector'].map(lambda x: cosine(x, keyword_vector))
+        filtered_df = movie_vectors[movie_vectors['cluster'].isin(target_clusters)]
+        distances = filtered_df['vector'].map(lambda x: cosine(x, vector))
+
+        # test
+        movie_ids = filtered_df.assign(distance=distances).sort_values(by='distance').index[:70]
+        return list(movie_ids)
+
+        '''
         movie_id = filtered_df.assign(distance=distances).sort_values(by='distance').index[0]
 
         # dont's return rec if the closest movie is too far from keyword
-        '''
         target_vector = movie_vectors.loc[movie_id]['vector']
-        if cosine(target_vector, keyword_vector) > 0.3:
+        if cosine(target_vector, vector) > 0.3:
             return []
-        '''
 
         # get similar rec
         similar_rec = self.rec_dao.similar_rec.get(movie_id)
 
         return list(map(lambda x: x['movie_id'], similar_rec or []))
+        '''
         
-
 
     def get_similar_words_by_vector(self, keyword):
         model = self.word_model.fasttext_word_model
