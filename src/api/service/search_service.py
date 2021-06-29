@@ -13,6 +13,7 @@ class SearchService(object):
         self.movie_info_dao = movie_info_dao
         self.komoran = Komoran()
         self.flatten = itertools.chain.from_iterable
+        self.pos_targets = {'NNG', 'NNP', 'VV', 'VA', 'MAG', 'VX', 'NF', 'NV', 'XR'}
 
 
     def search(self, keyword):
@@ -84,8 +85,9 @@ class SearchService(object):
         model = self.word_model.fasttext_word_model
 
         # get keyword vector
-        tokens = self.komoran.morphs(keyword)
-        vectors = np.array([model.wv[token] for token in tokens])
+        tokens = self.komoran.pos(keyword)
+        vectors = np.array([model.wv[token[0]] for token in tokens if token[1] in self.pos_targets])
+        print(tokens)
         keyword_vector = np.sum(vectors, axis=0)
         movie_ids = self.get_movies_by_vector(keyword_vector)
 
