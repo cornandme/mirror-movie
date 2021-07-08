@@ -1,11 +1,11 @@
-from abc import ABC
+from abc import ABCMeta
 from functools import wraps
 from io import BytesIO
 import time
 
 import joblib
 
-class S3Loader(ABC):
+class S3Loader(metaclass=ABCMeta):
     def __init__(self, s3, config):
         self.s3 = s3
         self.config = config
