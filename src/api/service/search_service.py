@@ -18,6 +18,9 @@ class SearchService(object):
 
     def search(self, keyword):
         result = self.search_hash(keyword)
+
+        # test
+        result['movies'] = []
         
         # 벡터 검색으로 보충
         if len(result['movies']) < 100:
