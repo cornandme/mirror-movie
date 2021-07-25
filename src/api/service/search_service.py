@@ -87,7 +87,6 @@ class SearchService(object):
         # get keyword vector
         tokens = self.komoran.pos(keyword)
         vectors = np.array([model.wv[token[0]] for token in tokens if token[1] in self.pos_targets])
-        print(tokens)
         keyword_vector = np.sum(vectors, axis=0)
         movie_ids = self.get_movies_by_vector(keyword_vector)
 
