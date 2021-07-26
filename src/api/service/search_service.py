@@ -17,10 +17,12 @@ class SearchService(object):
 
 
     def search(self, keyword):
-        result = self.search_hash(keyword)
+        '''
+        영화 추천: 역색인 모델 결과를 먼저 올리고, 벡터 검색으로 보충함.
+        검색어 추천: 완성된 검색어를 보조 추천으로 배치해 필요한 경우 사용해 영화를 찾을 수 있도록 함.
+        '''
 
-        # test
-        result['movies'] = []
+        result = self.search_hash(keyword)
         
         # 벡터 검색으로 보충
         if len(result['movies']) < 100:
@@ -51,22 +53,32 @@ class SearchService(object):
 
 
     def search_hash(self, keyword):
+        '''
+        제목과 이름의 경우, 검색어와 같다면 상단에 노출함.
+        장르는 벡터 검색이 잘 잡아주는 것으로 보이므로 사용 x.
+        국가는 큰 의미가 없어 보이므로 사용 x.
+        '''
+
         subword_hash = self.search_dao.subword_hash
         name_id_hash = self.search_dao.name_id_hash
 
+
         titles = subword_hash['movie_name'].get(keyword) or []
-        title_result = list(self.flatten([name_id_hash['movie_name'].get(title) for title in titles]))
+        title_result = name_id_hash['movie_name'].get(keyword) or []
+        # title_result = list(self.flatten([name_id_hash['movie_name'].get(title) for title in titles]))
         
         makers = subword_hash['maker'].get(keyword) or []
         maker_result = list(self.flatten([name_id_hash['maker'].get(maker) for maker in makers]))
         
+        '''
         genres = subword_hash['genre'].get(keyword) or []
         genre_result = list(self.flatten([name_id_hash['genre'].get(genre) for genre in genres]))[:30]
         
         nations = subword_hash['nation'].get(keyword) or []
         nation_result = list(self.flatten([name_id_hash['nation'].get(nation) for nation in nations]))[:30]
+        '''
         
-        keyword_li = titles + makers + genres + nations
+        keyword_li = titles + makers
         if len(keyword_li) == 0:
             return {
                 'movies': [],
@@ -75,7 +87,7 @@ class SearchService(object):
         keyword_li = self.get_unique_ordered_list(keyword_li)[:15]
         
         # 영화 병합
-        rec = title_result + maker_result + genre_result + nation_result
+        rec = title_result + maker_result
         rec = self.get_unique_ordered_list(rec)
         
         return {
